@@ -6,29 +6,46 @@
 #include <stdio.h>
 #include <string.h>
 
-#ifdef __AVR__
+#if defined( __AVR__ )
 #include "../mcc_generated_files/uart1.h"
-#elif __linux__
-uint8_t UART1_IsRxReady(void) {
+
+uint8_t CLI_IsRxReady(void) {
+    return UART1_IsRxReady();
+}
+
+uint8_t CLI_GetChar(void) {
+    return (uint8_t) UART1_Read();
+}
+#elif defined( __linux__ )
+uint8_t CLI_IsRxReady(void) {
     return 1;
 }
-uint8_t UART1_Read(void) {
+
+uint8_t CLI_GetChar(void) {
+    return (uint8_t) getchar();
+}
+#elif defined( __MINGW64__ )
+uint8_t CLI_IsRxReady(void) {
+    return 1;
+}
+
+uint8_t CLI_GetChar(void) {
     return (uint8_t) getchar();
 }
 #endif
 
-static char _CLI_BUFF[CLI_BUFF_SIZE + 1] = "\0";
+static char p_CLI_BUFF[CLI_BUFF_SIZE + 1] = "\0";
 
-static ParsedCmd_t _PARSED_CMD = {"\0", 0, {"\0", "\0", "\0", "\0"}};
+static ParsedCmd_t p_PARSED_CMD = {"\0", 0, {"\0", "\0", "\0", "\0"}};
 
-void CLI_Get_Cmd() {
+void CLI_Get_Cmd(void) {
     uint8_t byteIn;
     uint8_t idx = 0;
 
-    strncpy(_CLI_BUFF, "\0", (CLI_BUFF_SIZE + 1));
+    strncpy(p_CLI_BUFF, "\0", (CLI_BUFF_SIZE + 1));
     while (1) {
-        if (UART1_IsRxReady()) {
-            byteIn = UART1_Read();
+        if (CLI_IsRxReady()) {
+            byteIn = CLI_GetChar();
             //printf("%x\n", byteIn);
 
             // NL or CR end the command
@@ -39,7 +56,7 @@ void CLI_Get_Cmd() {
             if (byteIn == 8) {
                 if (idx > 0) {
                     idx --;
-                    _CLI_BUFF[idx] = '\0';
+                    p_CLI_BUFF[idx] = '\0';
                 }
                 continue;
             }
@@ -51,30 +68,30 @@ void CLI_Get_Cmd() {
             if (idx == CLI_BUFF_SIZE) {
                 continue;
             }
-            _CLI_BUFF[idx] = (char)byteIn;
+            p_CLI_BUFF[idx] = (char)byteIn;
             idx ++;
-            _CLI_BUFF[idx] = '\0';
+            p_CLI_BUFF[idx] = '\0';
         }
     }
 }
 
-uint8_t CLI_Parse_Cmd() {
-    strncpy(_PARSED_CMD.cmd, "\0", CLI_PARAM_SIZE);
-    _PARSED_CMD.nParams = 0;
+uint8_t CLI_Parse_Cmd(void) {
+    strncpy(p_PARSED_CMD.cmd, "\0", CLI_PARAM_SIZE);
+    p_PARSED_CMD.nParams = 0;
     for (uint8_t i = 0; i < CLI_PARAM_CNT; i++) {
-        strncpy(_PARSED_CMD.params[i], "\0", CLI_PARAM_SIZE);
+        strncpy(p_PARSED_CMD.params[i], "\0", CLI_PARAM_SIZE);
     }
 
     //printf("DBG: parse ...\n");
     uint8_t j = 0;
     for (uint8_t i = 0; i < CLI_BUFF_SIZE; i ++) {
-        if (_CLI_BUFF[i] == 32) {
-            _PARSED_CMD.nParams ++;
+        if (p_CLI_BUFF[i] == 32) {
+            p_PARSED_CMD.nParams ++;
             j = 0;
             continue;
         }
-        if (_CLI_BUFF[i] == 0) {
-            _PARSED_CMD.nParams ++;
+        if (p_CLI_BUFF[i] == 0) {
+            p_PARSED_CMD.nParams ++;
             break;
         }
 
@@ -82,35 +99,35 @@ uint8_t CLI_Parse_Cmd() {
             printf("ERROR parsing (size)\n");
             return 1;
         }
-        if (_PARSED_CMD.nParams >= CLI_PARAM_CNT) {
+        if (p_PARSED_CMD.nParams >= CLI_PARAM_CNT) {
             printf("ERROR parsing (param)\n");
             return 2;
         }
 
-        if (_PARSED_CMD.nParams == 0) {
-            _PARSED_CMD.cmd[j] = _CLI_BUFF[i];
+        if (p_PARSED_CMD.nParams == 0) {
+            p_PARSED_CMD.cmd[j] = p_CLI_BUFF[i];
             j ++;
-            _PARSED_CMD.cmd[j] = '\0';
+            p_PARSED_CMD.cmd[j] = '\0';
         } else {
-            _PARSED_CMD.params[_PARSED_CMD.nParams - 1][j] = _CLI_BUFF[i];
+            p_PARSED_CMD.params[p_PARSED_CMD.nParams - 1][j] = p_CLI_BUFF[i];
             j ++;
-            _PARSED_CMD.params[_PARSED_CMD.nParams - 1][j] = '\0';
+            p_PARSED_CMD.params[p_PARSED_CMD.nParams - 1][j] = '\0';
         }
     }
-    if (_PARSED_CMD.nParams > 0) {
-        _PARSED_CMD.nParams --;
+    if (p_PARSED_CMD.nParams > 0) {
+        p_PARSED_CMD.nParams --;
     }
     return 0;
 }
 
-void CLI_Execute() {
-    //printf("DBG: execute %s (%d params)\n", _PARSED_CMD.cmd, _PARSED_CMD.nParams);
-    if (strlen(_PARSED_CMD.cmd) == 0) {
+void CLI_Execute(void) {
+    //printf("DBG: execute %s (%d params)\n", p_PARSED_CMD.cmd, p_PARSED_CMD.nParams);
+    if (strlen(p_PARSED_CMD.cmd) == 0) {
         return;
     }
 
     unsigned int i = 0;
-    if (strncmp(_PARSED_CMD.cmd, "help", CLI_PARAM_SIZE) == 0) {
+    if (strncmp(p_PARSED_CMD.cmd, "help", CLI_PARAM_SIZE) == 0) {
         for (i = 0; i < Get_Cmd_Cnt(); i++) {
             printf("  %s - %s\n", CMDS[i].cmd, CMDS[i].help);
         }
@@ -119,8 +136,8 @@ void CLI_Execute() {
 
     CliCmdReturn_t cmdRet = CMD_DONE;
     for (i = 0; i < Get_Cmd_Cnt(); i++) {
-        if (strncmp(_PARSED_CMD.cmd, CMDS[i].cmd, CLI_PARAM_SIZE) == 0) {
-            cmdRet = CMDS[i].fptr(&_PARSED_CMD);
+        if (strncmp(p_PARSED_CMD.cmd, CMDS[i].cmd, CLI_PARAM_SIZE) == 0) {
+            cmdRet = CMDS[i].fptr(&p_PARSED_CMD);
             break;
         }
     }
