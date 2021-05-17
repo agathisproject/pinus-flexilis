@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "cli.h"
-#include "cli_types.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -17,11 +16,11 @@ uint8_t CLI_GetChar(void) {
     return (uint8_t) UART1_Read();
 }
 #elif defined( __linux__ )
-uint8_t CLI_IsRxReady(void) {
+uint8_t p_CLI_IsRxReady(void) {
     return 1;
 }
 
-uint8_t CLI_GetChar(void) {
+uint8_t p_CLI_GetChar(void) {
     return (uint8_t) getchar();
 }
 #elif defined( __MINGW64__ )
@@ -35,8 +34,24 @@ uint8_t CLI_GetChar(void) {
 #endif
 
 static char p_CLI_BUFF[CLI_BUFF_SIZE + 1] = "\0";
+static char p_CLI_PROMPT[CLI_WORD_SIZE + 2] = "\0";
 
 static ParsedCmd_t p_PARSED_CMD = {"\0", 0, {"\0", "\0", "\0", "\0"}};
+
+static CliEnv p_CLI_ENV = {""};
+
+void p_Make_Prompt(void) {
+    strncpy(p_CLI_PROMPT, p_CLI_ENV.context, CLI_WORD_SIZE);
+    strcat(p_CLI_PROMPT, "> ");
+}
+
+void CLI_Init(void) {
+    p_Make_Prompt();
+}
+
+char * CLI_Get_Prompt(void) {
+    return p_CLI_PROMPT;
+}
 
 void CLI_Get_Cmd(void) {
     uint8_t byteIn;
@@ -44,8 +59,8 @@ void CLI_Get_Cmd(void) {
 
     strncpy(p_CLI_BUFF, "\0", (CLI_BUFF_SIZE + 1));
     while (1) {
-        if (CLI_IsRxReady()) {
-            byteIn = CLI_GetChar();
+        if (p_CLI_IsRxReady()) {
+            byteIn = p_CLI_GetChar();
             //printf("%x\n", byteIn);
 
             // NL or CR end the command
@@ -76,10 +91,10 @@ void CLI_Get_Cmd(void) {
 }
 
 uint8_t CLI_Parse_Cmd(void) {
-    strncpy(p_PARSED_CMD.cmd, "\0", CLI_PARAM_SIZE);
+    strncpy(p_PARSED_CMD.cmd, "\0", CLI_WORD_SIZE);
     p_PARSED_CMD.nParams = 0;
-    for (uint8_t i = 0; i < CLI_PARAM_CNT; i++) {
-        strncpy(p_PARSED_CMD.params[i], "\0", CLI_PARAM_SIZE);
+    for (uint8_t i = 0; i < CLI_WORD_CNT; i++) {
+        strncpy(p_PARSED_CMD.params[i], "\0", CLI_WORD_SIZE);
     }
 
     //printf("DBG: parse ...\n");
@@ -95,11 +110,11 @@ uint8_t CLI_Parse_Cmd(void) {
             break;
         }
 
-        if (j >= CLI_PARAM_SIZE) {
+        if (j >= CLI_WORD_SIZE) {
             printf("ERROR parsing (size)\n");
             return 1;
         }
-        if (p_PARSED_CMD.nParams >= CLI_PARAM_CNT) {
+        if (p_PARSED_CMD.nParams >= CLI_WORD_CNT) {
             printf("ERROR parsing (param)\n");
             return 2;
         }
@@ -127,16 +142,18 @@ void CLI_Execute(void) {
     }
 
     unsigned int i = 0;
-    if (strncmp(p_PARSED_CMD.cmd, "help", CLI_PARAM_SIZE) == 0) {
+    if (strncmp(p_PARSED_CMD.cmd, "help", CLI_WORD_SIZE) == 0) {
         for (i = 0; i < Get_Cmd_Cnt(); i++) {
-            printf("  %s - %s\n", CMDS[i].cmd, CMDS[i].help);
+            if (CMDS[i].cmd[0] != '.') {
+                printf("  %s - %s\n", CMDS[i].cmd, CMDS[i].cmdHelp);
+            }
         }
         return;
     }
 
     CliCmdReturn_t cmdRet = CMD_DONE;
     for (i = 0; i < Get_Cmd_Cnt(); i++) {
-        if (strncmp(p_PARSED_CMD.cmd, CMDS[i].cmd, CLI_PARAM_SIZE) == 0) {
+        if (strncmp(p_PARSED_CMD.cmd, CMDS[i].cmd, CLI_WORD_SIZE) == 0) {
             cmdRet = CMDS[i].fptr(&p_PARSED_CMD);
             break;
         }
@@ -146,9 +163,12 @@ void CLI_Execute(void) {
         printf("UNRECOGNIZED command\n");
     } else if (cmdRet == CMD_WRONG_N) {
         printf("WRONG argument count\n");
-        printf("  %s %s\n", CMDS[i].cmd, CMDS[i].desc);
+        printf("  %s %s\n", CMDS[i].cmd, CMDS[i].argDesc);
     } else if (cmdRet == CMD_WRONG_PARAM) {
         printf("WRONG arguments\n");
-        printf("  %s %s\n", CMDS[i].cmd, CMDS[i].desc);
+        printf("  %s %s\n", CMDS[i].cmd, CMDS[i].argDesc);
+    } else {
+        strncpy(p_CLI_ENV.context, "", CLI_WORD_SIZE);
     }
+    p_Make_Prompt();
 }

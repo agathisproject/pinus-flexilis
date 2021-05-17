@@ -6,7 +6,17 @@
 
 #include <stdint.h>
 
-#define CLI_PROMPT "> "
+#include "cli_types.h"
+
+/**
+ * @brief init CLI library
+ */
+void CLI_Init(void);
+
+/**
+ * @return CLI prompt
+ */
+char * CLI_Get_Prompt(void);
 
 /**
  * @brief get command from UART/stdin into the internal buffer
@@ -24,5 +34,12 @@ uint8_t CLI_Parse_Cmd(void);
  * @brief execute command
  */
 void CLI_Execute(void);
+
+extern CliCmd_t *CMDS;
+/**
+ *
+ * @return
+ */
+unsigned int Get_Cmd_Cnt(void);
 
 #endif /* CLI_YP8GJVG3TCW7BWQW */

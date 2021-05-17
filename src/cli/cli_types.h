@@ -6,18 +6,15 @@
 
 #include <stdint.h>
 
-#define CLI_BUFF_SIZE 32
-#define CLI_PARAM_CNT 4 /**< number of parameters for a command */
-#define CLI_PARAM_SIZE 12
+#define CLI_BUFF_SIZE 32  /**< max command size */
+#define CLI_WORD_CNT 4    /**< number of words for a command */
+#define CLI_WORD_SIZE 12  /**< max command word size */
 
 typedef struct {
-    char cmd[CLI_PARAM_SIZE];
+    char cmd[CLI_WORD_SIZE];
     uint8_t nParams;
-    char params[CLI_PARAM_CNT][CLI_PARAM_SIZE];
+    char params[CLI_WORD_CNT][CLI_WORD_SIZE];
 } ParsedCmd_t;
-
-#define CMD_DESC_SIZE 32
-#define CMD_HELP_SIZE 32
 
 typedef enum {
     CMD_DONE,
@@ -26,13 +23,17 @@ typedef enum {
 } CliCmdReturn_t;
 
 typedef struct {
-    char cmd[CLI_PARAM_SIZE];
-    char desc[CMD_DESC_SIZE];
-    char help[CMD_HELP_SIZE];
+    char context[CLI_WORD_SIZE];
+} CliEnv;
+
+#define CMD_ARG_DESC_SIZE 32
+#define CMD_HELP_SIZE 32
+
+typedef struct {
+    char cmd[CLI_WORD_SIZE]; /**< command */
+    char argDesc[CMD_ARG_DESC_SIZE]; /**< argument description */
+    char cmdHelp[CMD_HELP_SIZE]; /**< command help/description */
     CliCmdReturn_t (*fptr)(ParsedCmd_t *cmdp);
 } CliCmd_t;
-
-extern CliCmd_t *CMDS;
-unsigned int Get_Cmd_Cnt();
 
 #endif /* CLI_TYPES_BEES5G972K9T2FRP */
