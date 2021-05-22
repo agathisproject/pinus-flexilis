@@ -8,15 +8,25 @@
 
 #include "cli_types.h"
 
+typedef struct {
+    uint8_t group;
+    uint8_t prev_group;
+} CliEnv;
+
+/**
+ * @return get CLI prompt
+ */
+char * CLI_Get_Prompt(void);
+
+/**
+ * @brief set CLI prompt
+ */
+void CLI_Set_Prompt(const char *str);
+
 /**
  * @brief init CLI library
  */
 void CLI_Init(void);
-
-/**
- * @return CLI prompt
- */
-char * CLI_Get_Prompt(void);
 
 /**
  * @brief get command from UART/stdin into the internal buffer

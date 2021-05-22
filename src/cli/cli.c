@@ -33,24 +33,44 @@ uint8_t CLI_GetChar(void) {
 }
 #endif
 
-static char p_CLI_BUFF[CLI_BUFF_SIZE + 1] = "\0";
-static char p_CLI_PROMPT[CLI_WORD_SIZE + 2] = "\0";
+static char p_CLI_BUFF[CLI_BUFF_SIZE + 1] = { 0 };
+static char p_CLI_PROMPT[CLI_PROMPT_SIZE] = { 0 };
 
 static ParsedCmd_t p_PARSED_CMD = {"\0", 0, {"\0", "\0", "\0", "\0"}};
 
-static CliEnv p_CLI_ENV = {""};
+static CliEnv p_CLI_ENV = {0, 0};
+
+char * CLI_Get_Prompt(void) {
+    return p_CLI_PROMPT;
+}
+
+void CLI_Set_Prompt(const char *str) {
+    strncpy(p_CLI_PROMPT, str, CLI_PROMPT_SIZE);
+}
 
 void p_Make_Prompt(void) {
-    strncpy(p_CLI_PROMPT, p_CLI_ENV.context, CLI_WORD_SIZE);
-    strcat(p_CLI_PROMPT, "> ");
+    memset(p_CLI_PROMPT, 0, CLI_PROMPT_SIZE);
+
+    if (p_CLI_ENV.group != 0) {
+        strncat(p_CLI_PROMPT, "up ", CLI_PROMPT_SIZE);
+    }
+
+    for (unsigned int i = 0; i < Get_Cmd_Cnt(); i++) {
+        if (CMDS[i].in_group == p_CLI_ENV.group) {
+            strncat(p_CLI_PROMPT, CMDS[i].cmd, CLI_PROMPT_SIZE);
+            strncat(p_CLI_PROMPT, " ", CLI_PROMPT_SIZE);
+        }
+    }
+    if (strlen(p_CLI_PROMPT) <= (CLI_PROMPT_SIZE - 2)) {
+        strncat(p_CLI_PROMPT, ">", CLI_PROMPT_SIZE);
+    } else {
+        p_CLI_PROMPT[CLI_PROMPT_SIZE - 2] = '>';
+        p_CLI_PROMPT[CLI_PROMPT_SIZE - 1] = '\0';
+    }
 }
 
 void CLI_Init(void) {
     p_Make_Prompt();
-}
-
-char * CLI_Get_Prompt(void) {
-    return p_CLI_PROMPT;
 }
 
 void CLI_Get_Cmd(void) {
@@ -136,24 +156,34 @@ uint8_t CLI_Parse_Cmd(void) {
 }
 
 void CLI_Execute(void) {
-    //printf("DBG: execute %s (%d params)\n", p_PARSED_CMD.cmd, p_PARSED_CMD.nParams);
+    //printf("DBG: execute %s (%d params) %d\n", p_PARSED_CMD.cmd, p_PARSED_CMD.nParams, p_CLI_ENV.group);
     if (strlen(p_PARSED_CMD.cmd) == 0) {
         return;
     }
 
     unsigned int i = 0;
-    if (strncmp(p_PARSED_CMD.cmd, "help", CLI_WORD_SIZE) == 0) {
-        for (i = 0; i < Get_Cmd_Cnt(); i++) {
-            if (CMDS[i].cmd[0] != '.') {
-                printf("  %s - %s\n", CMDS[i].cmd, CMDS[i].cmdHelp);
-            }
-        }
+//    if (strncmp(p_PARSED_CMD.cmd, "help", 4) == 0) {
+//        for (i = 0; i < Get_Cmd_Cnt(); i++) {
+//            if (CMDS[i].cmd[0] != '.') {
+//                printf("  %s - %s\n", CMDS[i].cmd, CMDS[i].cmdHelp);
+//            }
+//        }
+//        return;
+//    }
+
+    if ((strncmp(p_PARSED_CMD.cmd, "up", 2) == 0) && (p_CLI_ENV.group != 0)) {
+        uint8_t tmp = p_CLI_ENV.group;
+        p_CLI_ENV.group = p_CLI_ENV.prev_group;
+        p_CLI_ENV.prev_group = tmp;
+
+        p_Make_Prompt();
         return;
     }
 
     CliCmdReturn_t cmdRet = CMD_DONE;
     for (i = 0; i < Get_Cmd_Cnt(); i++) {
-        if (strncmp(p_PARSED_CMD.cmd, CMDS[i].cmd, CLI_WORD_SIZE) == 0) {
+        if ((strncmp(p_PARSED_CMD.cmd, CMDS[i].cmd, CLI_WORD_SIZE) == 0)
+                && (p_CLI_ENV.group == CMDS[i].in_group)) {
             cmdRet = CMDS[i].fptr(&p_PARSED_CMD);
             break;
         }
@@ -168,7 +198,10 @@ void CLI_Execute(void) {
         printf("WRONG arguments\n");
         printf("  %s %s\n", CMDS[i].cmd, CMDS[i].argDesc);
     } else {
-        strncpy(p_CLI_ENV.context, "", CLI_WORD_SIZE);
+        if (CMDS[i].next_group != p_CLI_ENV.group) {
+            p_CLI_ENV.prev_group = p_CLI_ENV.group;
+            p_CLI_ENV.group = CMDS[i].next_group;
+        }
     }
     p_Make_Prompt();
 }

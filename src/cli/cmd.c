@@ -6,7 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-CliCmdReturn_t cli(ParsedCmd_t *cmdp) {
+CliCmdReturn_t p_env(ParsedCmd_t *cmdp) {
     if (cmdp->nParams == 0) {
         printf("CLI\n");
         return CMD_DONE;
@@ -17,39 +17,56 @@ CliCmdReturn_t cli(ParsedCmd_t *cmdp) {
     }
 }
 
-void p_info_SW(void) {
-    printf("ver: ?\n");
-}
-
-void p_info_HW(void) {
-    printf("type: ?\n");
-    printf("SN: ?\n");
-}
-
 CliCmdReturn_t info(ParsedCmd_t *cmdp) {
-    if (cmdp->nParams != 1) {
+    if (cmdp->nParams != 0) {
         return CMD_WRONG_N;
     }
 
-    if (strncmp(cmdp->params[0], "sw", CLI_WORD_SIZE) == 0) {
-        p_info_SW();
-    } else if (strncmp(cmdp->params[0], "hw", CLI_WORD_SIZE) == 0) {
-        p_info_HW();
-    } else {
-        return CMD_WRONG_PARAM;
-    }
+    printf("MFR_NAME\n");
+    printf("MFR_PN\n");
+    printf("MFR_SN\n");
     return CMD_DONE;
 }
 
-#define CMD_CNT 2
+CliCmdReturn_t dev(ParsedCmd_t *cmdp) {
+    if (cmdp->nParams != 0) {
+        return CMD_WRONG_N;
+    }
+
+    printf("gpio\n");
+    return CMD_DONE;
+}
+
+CliCmdReturn_t mod(ParsedCmd_t *cmdp) {
+    if (cmdp->nParams != 0) {
+        return CMD_WRONG_N;
+    }
+
+    printf("mod1\n");
+    printf("mod2\n");
+    printf("mod3\n");
+    return CMD_DONE;
+}
+
+CliCmdReturn_t gpio(ParsedCmd_t *cmdp) {
+    if (cmdp->nParams != 0) {
+        return CMD_WRONG_N;
+    }
+
+    return CMD_DONE;
+}
+
+#define CMD_CNT 4
 
 unsigned int Get_Cmd_Cnt(void) {
     return CMD_CNT;
 }
 
 static CliCmd_t _CMDS_ARRAY[CMD_CNT] = {
-    {".cli", "[set key value]", "show/set CLI params", &cli},
-    {"info", "[sw|hw]", "show HW/SW info", &info},
+    {"?", "", "show module info", 0, 0, &info},
+    {"dev", "", "show devices", 0, 1, &dev},
+    {"mod", "", "show modules", 0, 0, &mod},
+    {"gpio", "", "show modules", 1, 1, &gpio},
 };
 
 CliCmd_t *CMDS = _CMDS_ARRAY;
