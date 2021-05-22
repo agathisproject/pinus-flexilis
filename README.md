@@ -16,4 +16,4 @@ To exit CTRL+C
 
 ## Links
 
-* [CLI specification](https://github.com/agathisproject/pinus-flexilis/tree/master/docs/CLI.md)
+* [CLI specification](https://github.com/agathisproject/pinus-flexilis/blob/docs/docs/CLI.md)
