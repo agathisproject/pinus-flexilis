@@ -4,19 +4,21 @@
 #include <stdlib.h>
 
 #include "cli/cli.h"
+#include "agathis/base.h"
 
 int main(void) {
     uint8_t parseSts = 1;
-    CLI_Init();
 
     printf("Agathis CLI simulator\n");
+    ag_init();
+    CLI_init();
 
     while (1) {
-        printf("%s", CLI_Get_Prompt());
-        CLI_Get_Cmd();
-        parseSts = CLI_Parse_Cmd();
+        printf("%s", CLI_getPrompt());
+        CLI_getCmd();
+        parseSts = CLI_parseCmd();
         if (parseSts == 0) {
-            CLI_Execute();
+            CLI_execute();
         }
     }
     return EXIT_SUCCESS;

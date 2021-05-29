@@ -15,13 +15,13 @@ typedef struct {
     char cmd[CLI_WORD_SIZE];
     uint8_t nParams;
     char params[CLI_WORD_CNT][CLI_WORD_SIZE];
-} ParsedCmd_t;
+} CLI_PARSED_CMD_t;
 
 typedef enum {
     CMD_DONE,
     CMD_WRONG_N,
     CMD_WRONG_PARAM,
-} CliCmdReturn_t;
+} CLI_CMD_RETURN_t;
 
 #define CMD_ARG_DESC_SIZE 32
 #define CMD_HELP_SIZE 32
@@ -32,7 +32,7 @@ typedef struct {
     const char cmdHelp[CMD_HELP_SIZE]; /**< command help/description */
     uint8_t in_group;
     uint8_t next_group;
-    CliCmdReturn_t (*fptr)(ParsedCmd_t *cmdp);
-} CliCmd_t;
+    CLI_CMD_RETURN_t (*fptr)(CLI_PARSED_CMD_t *cmdp);
+} CLI_CMD_t;
 
 #endif /* CLI_TYPES_BEES5G972K9T2FRP */

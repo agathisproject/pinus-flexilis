@@ -6,7 +6,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-CliCmdReturn_t p_env(ParsedCmd_t *cmdp) {
+#include "../agathis/base.h"
+
+CLI_CMD_RETURN_t p_env(CLI_PARSED_CMD_t *cmdp) {
     if (cmdp->nParams == 0) {
         printf("CLI\n");
         return CMD_DONE;
@@ -17,27 +19,35 @@ CliCmdReturn_t p_env(ParsedCmd_t *cmdp) {
     }
 }
 
-CliCmdReturn_t info(ParsedCmd_t *cmdp) {
+CLI_CMD_RETURN_t info(CLI_PARSED_CMD_t *cmdp) {
     if (cmdp->nParams != 0) {
         return CMD_WRONG_N;
     }
 
+    if (MOD_STATE.flags & AG_FLAG_TMC) {
+        printf("TMC, addr %d\n", MOD_STATE.addr_d);
+    } else {
+        printf("MMC, addr %d\n", MOD_STATE.addr_d);
+    }
     printf("MFR_NAME\n");
     printf("MFR_PN\n");
     printf("MFR_SN\n");
     return CMD_DONE;
 }
 
-CliCmdReturn_t dev(ParsedCmd_t *cmdp) {
+CLI_CMD_RETURN_t dev(CLI_PARSED_CMD_t *cmdp) {
     if (cmdp->nParams != 0) {
         return CMD_WRONG_N;
     }
 
-    printf("gpio\n");
+    printf("pwr\n");
+    printf("jtag\n");
+    printf("clk\n");
+    printf("1pps\n");
     return CMD_DONE;
 }
 
-CliCmdReturn_t mod(ParsedCmd_t *cmdp) {
+CLI_CMD_RETURN_t mod(CLI_PARSED_CMD_t *cmdp) {
     if (cmdp->nParams != 0) {
         return CMD_WRONG_N;
     }
@@ -48,7 +58,7 @@ CliCmdReturn_t mod(ParsedCmd_t *cmdp) {
     return CMD_DONE;
 }
 
-CliCmdReturn_t gpio(ParsedCmd_t *cmdp) {
+CLI_CMD_RETURN_t gpio(CLI_PARSED_CMD_t *cmdp) {
     if (cmdp->nParams != 0) {
         return CMD_WRONG_N;
     }
@@ -56,17 +66,20 @@ CliCmdReturn_t gpio(ParsedCmd_t *cmdp) {
     return CMD_DONE;
 }
 
-#define CMD_CNT 4
+#define CMD_CNT 7
 
-unsigned int Get_Cmd_Cnt(void) {
+unsigned int CLI_getCmdCnt(void) {
     return CMD_CNT;
 }
 
-static CliCmd_t _CMDS_ARRAY[CMD_CNT] = {
+static CLI_CMD_t p_CMDS_ARRAY[CMD_CNT] = {
     {"?", "", "show module info", 0, 0, &info},
     {"dev", "", "show devices", 0, 1, &dev},
     {"mod", "", "show modules", 0, 0, &mod},
-    {"gpio", "", "show modules", 1, 1, &gpio},
+    {"pwr", "", "device", 1, 1, &gpio},
+    {"clk", "", "device", 1, 1, &gpio},
+    {"1pps", "", "device", 1, 1, &gpio},
+    {"jtag", "", "device", 1, 1, &gpio},
 };
 
-CliCmd_t *CMDS = _CMDS_ARRAY;
+CLI_CMD_t *CMDS = p_CMDS_ARRAY;
