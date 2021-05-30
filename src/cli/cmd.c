@@ -102,6 +102,10 @@ CLI_CMD_RETURN_t mod(CLI_PARSED_CMD_t *cmdp) {
         return CMD_WRONG_N;
     }
 
+    if (!(MOD_STATE.flags & AG_FLAG_TMC)) {
+        return CMD_DONE;
+    }
+
     printf("mod1\n");
     printf("mod2\n");
     printf("mod3\n");

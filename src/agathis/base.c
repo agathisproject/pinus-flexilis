@@ -10,12 +10,15 @@
 #elif defined(__XC16__)
 #include "../hw/gpio.h"
 #include "../platform.h"
+#elif defined(__linux__)
+#include "stdlib.h"
+#include "sys/stat.h"
 #endif
 #include "config.h"
 
 AG_MC_STATE_t MOD_STATE = {0, 0, 0,
                            0, 0, 0, 0xFFFF,
-                           "AGATHIS_TEAM", "CLI_SIM", "0123456789ABCDEF"
+                           "", "", ""
                           };
 
 AG_MC_SCAN_INFO_t REMOTE_MODS[MC_MAX_CNT - 1] = {
@@ -65,6 +68,53 @@ void p_gpio_addr_u(uint8_t addr) {
 }
 #endif
 
+#if defined(__AVR__) || defined(__XC16__)
+void p_restore_state(void) {
+
+}
+#elif defined(__linux__)
+void p_restore_state(void) {
+    const char *fName = "EEPROM.BIN";
+    FILE *fp;
+    struct stat s;
+
+    if (stat(fName, &s) == -1) {
+        fp = fopen(fName, "wb");
+        if (!fp) {
+            perror("CANNOT create file");
+            exit(EXIT_FAILURE);
+        }
+        for (unsigned int i = 0; i < 1024; i ++) {
+            fputc(0xFF, fp);
+        }
+        fclose(fp);
+        return;
+    }
+
+    fp = fopen(fName, "rb");
+    if (!fp) {
+        perror("CANNOT open file");
+        exit(EXIT_FAILURE);
+    }
+    fseek(fp, 0, SEEK_SET);
+    for (unsigned int i = 0; i < 15; i++) {
+        MOD_STATE.mfr_name[i] = (char) fgetc(fp);
+    }
+    MOD_STATE.mfr_name[15] = '\0';
+    fseek(fp, 16, SEEK_SET);
+    for (unsigned int i = 0; i < 15; i++) {
+        MOD_STATE.mfr_pn[i] = (char) fgetc(fp);
+    }
+    MOD_STATE.mfr_pn[15] = '\0';
+    fseek(fp, 32, SEEK_SET);
+    for (unsigned int i = 0; i < 15; i++) {
+        MOD_STATE.mfr_sn[i] = (char) fgetc(fp);
+    }
+    MOD_STATE.mfr_sn[15] = '\0';
+    fclose(fp);
+}
+#endif
+
 #if defined(__AVR__)
 void ag_reset(void) {
     printf("reset\n");
@@ -98,6 +148,7 @@ void ag_init(void) {
            MOD_STATE.caps, MOD_STATE.flags);
 
     MOD_STATE.addr_d = p_gpio_addr_d();
+    p_restore_state();
     MOD_STATE.addr_i2c = (I2C_OFFSET + MOD_STATE.addr_d);
     if (MOD_STATE.addr_d == 0) {
         MOD_STATE.flags |= AG_FLAG_TMC;
