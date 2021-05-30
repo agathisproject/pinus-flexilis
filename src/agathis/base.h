@@ -25,9 +25,11 @@ typedef struct {
     uint8_t addr_i2c;      /**< MC I2C address */
     uint8_t flags;
     uint8_t caps;
-    uint8_t caps_en;
     uint8_t last_err;
     uint16_t type;
+    char mfr_name[16];
+    char mfr_pn[16];
+    char mfr_sn[16];
 } AG_MC_STATE_t;
 
 extern AG_MC_STATE_t MOD_STATE;
@@ -53,6 +55,8 @@ extern AG_MC_SCAN_INFO_t REMOTE_MODS[MC_MAX_CNT - 1];
 #if defined(__XC16__)
 extern SemaphoreHandle_t xSemaphore_MMC;
 #endif
+
+void ag_reset(void);
 
 void ag_init(void);
 

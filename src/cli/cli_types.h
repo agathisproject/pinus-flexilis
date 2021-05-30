@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-#ifndef CLI_TYPES_BEES5G972K9T2FRP
-#define CLI_TYPES_BEES5G972K9T2FRP
+#ifndef CLI_BEES5G972K9T2FRP
+#define CLI_BEES5G972K9T2FRP
 /** @file */
 
 #include <stdint.h>
@@ -35,4 +35,4 @@ typedef struct {
     CLI_CMD_RETURN_t (*fptr)(CLI_PARSED_CMD_t *cmdp);
 } CLI_CMD_t;
 
-#endif /* CLI_TYPES_BEES5G972K9T2FRP */
+#endif /* CLI_BEES5G972K9T2FRP */

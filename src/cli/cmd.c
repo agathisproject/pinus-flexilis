@@ -6,18 +6,67 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "../agathis/config.h"
 #include "../agathis/base.h"
 
-CLI_CMD_RETURN_t p_env(CLI_PARSED_CMD_t *cmdp) {
-    if (cmdp->nParams == 0) {
-        printf("CLI\n");
-        return CMD_DONE;
-    } else if (cmdp->nParams == 3) {
-        return CMD_DONE;
-    } else {
-        return CMD_WRONG_N;
-    }
+enum {
+    CMD_QUESTION = 0,
+    CMD_DEV,
+    CMD_MOD,
+    CMD_PWR,
+#if MOD_HAS_CLK
+    CMD_CLK,
+#endif
+#if MOD_HAS_1PPS
+    CMD_1PPS,
+#endif
+#if MOD_HAS_JTAG
+    CMD_JTAG,
+#endif
+#if MOD_HAS_USB
+    CMD_USB,
+#endif
+#if MOD_HAS_PCIE
+    CMD_PCIE,
+#endif
+    CMD_CNT
+};
+
+unsigned int CLI_getCmdCnt(void) {
+    return CMD_CNT;
 }
+
+CLI_CMD_RETURN_t info(CLI_PARSED_CMD_t *cmdp);
+CLI_CMD_RETURN_t dev(CLI_PARSED_CMD_t *cmdp);
+CLI_CMD_RETURN_t mod(CLI_PARSED_CMD_t *cmdp);
+CLI_CMD_RETURN_t pwr(CLI_PARSED_CMD_t *cmdp);
+#if MOD_HAS_CLK
+CLI_CMD_RETURN_t clk(CLI_PARSED_CMD_t *cmdp);
+#endif
+#if MOD_HAS_1PPS
+CLI_CMD_RETURN_t pps(CLI_PARSED_CMD_t *cmdp);
+#endif
+#if MOD_HAS_JTAG
+CLI_CMD_RETURN_t jtag(CLI_PARSED_CMD_t *cmdp);
+#endif
+
+static CLI_CMD_t p_CMDS_ARRAY[CMD_CNT] = {
+    {"?", "", "show module info", 0, 0, &info},
+    {"dev", "", "show devices", 0, 1, &dev},
+    {"mod", "", "show modules", 0, 0, &mod},
+    {"pwr", "", "device", 1, 1, &pwr},
+#if MOD_HAS_CLK
+    {"clk", "", "device", 1, 1, &clk},
+#endif
+#if MOD_HAS_1PPS
+    {"1pps", "", "device", 1, 1, &pps},
+#endif
+#if MOD_HAS_JTAG
+    {"jtag", "", "device", 1, 1, &jtag},
+#endif
+};
+
+CLI_CMD_t *CMDS = p_CMDS_ARRAY;
 
 CLI_CMD_RETURN_t info(CLI_PARSED_CMD_t *cmdp) {
     if (cmdp->nParams != 0) {
@@ -29,9 +78,9 @@ CLI_CMD_RETURN_t info(CLI_PARSED_CMD_t *cmdp) {
     } else {
         printf("MMC, addr %d\n", MOD_STATE.addr_d);
     }
-    printf("MFR_NAME\n");
-    printf("MFR_PN\n");
-    printf("MFR_SN\n");
+    printf("%s\n", MOD_STATE.mfr_name);
+    printf("%s\n", MOD_STATE.mfr_pn);
+    printf("%s\n", MOD_STATE.mfr_sn);
     return CMD_DONE;
 }
 
@@ -40,10 +89,11 @@ CLI_CMD_RETURN_t dev(CLI_PARSED_CMD_t *cmdp) {
         return CMD_WRONG_N;
     }
 
-    printf("pwr\n");
-    printf("jtag\n");
-    printf("clk\n");
-    printf("1pps\n");
+    for (unsigned int i = 0; i < CLI_getCmdCnt(); i++) {
+        if (CMDS[i].in_group == 1) {
+            printf("%s\n", CMDS[i].cmd);
+        }
+    }
     return CMD_DONE;
 }
 
@@ -58,7 +108,7 @@ CLI_CMD_RETURN_t mod(CLI_PARSED_CMD_t *cmdp) {
     return CMD_DONE;
 }
 
-CLI_CMD_RETURN_t gpio(CLI_PARSED_CMD_t *cmdp) {
+CLI_CMD_RETURN_t pwr(CLI_PARSED_CMD_t *cmdp) {
     if (cmdp->nParams != 0) {
         return CMD_WRONG_N;
     }
@@ -66,20 +116,32 @@ CLI_CMD_RETURN_t gpio(CLI_PARSED_CMD_t *cmdp) {
     return CMD_DONE;
 }
 
-#define CMD_CNT 7
+#if MOD_HAS_CLK
+CLI_CMD_RETURN_t clk(CLI_PARSED_CMD_t *cmdp) {
+    if (cmdp->nParams != 0) {
+        return CMD_WRONG_N;
+    }
 
-unsigned int CLI_getCmdCnt(void) {
-    return CMD_CNT;
+    return CMD_DONE;
 }
+#endif
 
-static CLI_CMD_t p_CMDS_ARRAY[CMD_CNT] = {
-    {"?", "", "show module info", 0, 0, &info},
-    {"dev", "", "show devices", 0, 1, &dev},
-    {"mod", "", "show modules", 0, 0, &mod},
-    {"pwr", "", "device", 1, 1, &gpio},
-    {"clk", "", "device", 1, 1, &gpio},
-    {"1pps", "", "device", 1, 1, &gpio},
-    {"jtag", "", "device", 1, 1, &gpio},
-};
+#if MOD_HAS_1PPS
+CLI_CMD_RETURN_t pps(CLI_PARSED_CMD_t *cmdp) {
+    if (cmdp->nParams != 0) {
+        return CMD_WRONG_N;
+    }
 
-CLI_CMD_t *CMDS = p_CMDS_ARRAY;
+    return CMD_DONE;
+}
+#endif
+
+#if MOD_HAS_JTAG
+CLI_CMD_RETURN_t jtag(CLI_PARSED_CMD_t *cmdp) {
+    if (cmdp->nParams != 0) {
+        return CMD_WRONG_N;
+    }
+
+    return CMD_DONE;
+}
+#endif

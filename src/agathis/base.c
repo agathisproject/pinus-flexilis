@@ -7,14 +7,15 @@
 #include <avr/wdt.h>
 #include "../hw/gpio.h"
 #include "../platform.h"
-#elif defined (__XC16__)
+#elif defined(__XC16__)
 #include "../hw/gpio.h"
 #include "../platform.h"
 #endif
+#include "config.h"
 
 AG_MC_STATE_t MOD_STATE = {0, 0, 0,
-                           0, 0, 0,
-                           0, 0xFFFF
+                           0, 0, 0, 0xFFFF,
+                           "AGATHIS_TEAM", "CLI_SIM", "0123456789ABCDEF"
                           };
 
 AG_MC_SCAN_INFO_t REMOTE_MODS[MC_MAX_CNT - 1] = {
@@ -64,9 +65,37 @@ void p_gpio_addr_u(uint8_t addr) {
 }
 #endif
 
+#if defined(__AVR__)
+void ag_reset(void) {
+    printf("reset\n");
+    wdt_enable(WDTO_15MS);
+}
+#elif defined(__XC16__)
+void ag_reset(void) {
+
+}
+#endif
+
 void ag_init(void) {
+#if MOD_HAS_CLK
+    MOD_STATE.caps |= AG_CAP_CLK;
+#endif
+#if MOD_HAS_1PPS
+    MOD_STATE.caps |= AG_CAP_1PPS;
+#endif
+#if MOD_HAS_JTAG
+    MOD_STATE.caps |= AG_CAP_JTAG;
+#endif
+#if MOD_HAS_USB
+    MOD_STATE.caps |= AG_CAP_USB;
+#endif
+#if MOD_HAS_PCIE
+    MOD_STATE.caps |= AG_CAP_PCIE;
+#endif
+
     MOD_STATE.flags = AG_FLAG_EEPROM;
-    MOD_STATE.caps = (AG_CAP_CLK | AG_CAP_1PPS | AG_CAP_JTAG);
+    printf("%s caps: 0x%02X, flags: 0x%02X\n", PREFIX_MC,
+           MOD_STATE.caps, MOD_STATE.flags);
 
     MOD_STATE.addr_d = p_gpio_addr_d();
     MOD_STATE.addr_i2c = (I2C_OFFSET + MOD_STATE.addr_d);

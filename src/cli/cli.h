@@ -13,6 +13,8 @@ typedef struct {
     uint8_t prev_group;
 } CLI_ENV_t;
 
+extern CLI_CMD_t *CMDS;
+
 /**
  * @return get CLI prompt
  */
@@ -45,7 +47,6 @@ uint8_t CLI_parseCmd(void);
  */
 void CLI_execute(void);
 
-extern CLI_CMD_t *CMDS;
 /**
  *
  * @return

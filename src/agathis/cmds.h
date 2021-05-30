@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-#ifndef CMDS_98RXG9U8BUUHY401
-#define CMDS_98RXG9U8BUUHY401
+#ifndef AGATHIS_98RXG9U8BUUHY401
+#define AGATHIS_98RXG9U8BUUHY401
 
 typedef enum {
     MC_CMD_FAIL,
@@ -31,4 +31,4 @@ typedef enum {
 #define AG_CMD_MFR          0xFE
 #define AG_CMD_MFR_NB       4
 
-#endif /* CMDS_98RXG9U8BUUHY401 */
+#endif /* AGATHIS_98RXG9U8BUUHY401 */
