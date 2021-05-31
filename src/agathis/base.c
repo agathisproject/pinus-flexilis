@@ -13,6 +13,7 @@
 #elif defined(__linux__)
 #include "stdlib.h"
 #include "sys/stat.h"
+#include "../sim/state.h"
 #endif
 #include "config.h"
 
@@ -52,7 +53,7 @@ uint8_t p_gpio_addr_d(void) {
 }
 #elif defined(__linux__)
 uint8_t p_gpio_addr_d(void) {
-    return 1;
+    return SIM_STATE.addr_d;
 }
 #endif
 
