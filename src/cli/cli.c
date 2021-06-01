@@ -15,20 +15,12 @@ uint8_t CLI_IsRxReady(void) {
 uint8_t CLI_GetChar(void) {
     return (uint8_t) UART1_Read();
 }
-#elif defined(__linux__)
+#elif defined(__linux__) || defined(__MINGW64__)
 uint8_t p_CLI_IsRxReady(void) {
     return 1;
 }
 
 uint8_t p_CLI_GetChar(void) {
-    return (uint8_t) getchar();
-}
-#elif defined(__MINGW64__)
-uint8_t CLI_IsRxReady(void) {
-    return 1;
-}
-
-uint8_t CLI_GetChar(void) {
     return (uint8_t) getchar();
 }
 #endif
@@ -52,17 +44,17 @@ void p_Make_Prompt(void) {
     memset(p_CLI_PROMPT, 0, CLI_PROMPT_SIZE);
 
     if (p_CLI_ENV.group != 0) {
-        strncat(p_CLI_PROMPT, "up ", CLI_PROMPT_SIZE);
+        strncat(p_CLI_PROMPT, "up ", (CLI_PROMPT_SIZE - 1));
     }
 
     for (unsigned int i = 0; i < CLI_getCmdCnt(); i++) {
         if (CMDS[i].in_group == p_CLI_ENV.group) {
-            strncat(p_CLI_PROMPT, CMDS[i].cmd, CLI_PROMPT_SIZE);
-            strncat(p_CLI_PROMPT, " ", CLI_PROMPT_SIZE);
+            strncat(p_CLI_PROMPT, CMDS[i].cmd, (CLI_PROMPT_SIZE - 1));
+            strncat(p_CLI_PROMPT, " ", (CLI_PROMPT_SIZE - 1));
         }
     }
     if (strlen(p_CLI_PROMPT) <= (CLI_PROMPT_SIZE - 2)) {
-        strncat(p_CLI_PROMPT, ">", CLI_PROMPT_SIZE);
+        strncat(p_CLI_PROMPT, ">", (CLI_PROMPT_SIZE - 1));
     } else {
         p_CLI_PROMPT[CLI_PROMPT_SIZE - 2] = '>';
         p_CLI_PROMPT[CLI_PROMPT_SIZE - 1] = '\0';

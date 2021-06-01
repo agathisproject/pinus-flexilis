@@ -10,7 +10,7 @@
 #elif defined(__XC16__)
 #include "../hw/gpio.h"
 #include "../platform.h"
-#elif defined(__linux__)
+#elif defined(__linux__) || defined(__MINGW64__)
 #include "stdlib.h"
 #include "sys/stat.h"
 #include "../sim/state.h"
@@ -51,7 +51,7 @@ uint8_t p_gpio_addr_d(void) {
                              gpio_get(PIN_D_ADDR0));
     return res;
 }
-#elif defined(__linux__)
+#elif defined(__linux__) || defined(__MINGW64__)
 uint8_t p_gpio_addr_d(void) {
     return SIM_STATE.addr_d;
 }
@@ -63,7 +63,7 @@ void p_gpio_addr_u(uint8_t addr) {
     gpio_set(PIN_U_ADDR1, ((addr >> 1) & 0x01));
     gpio_set(PIN_U_ADDR2, ((addr >> 2) & 0x01));
 }
-#elif defined(__linux__)
+#elif defined(__linux__) || defined(__MINGW64__)
 void p_gpio_addr_u(uint8_t addr) {
 
 }
@@ -73,7 +73,7 @@ void p_gpio_addr_u(uint8_t addr) {
 void p_restore_state(void) {
 
 }
-#elif defined(__linux__)
+#elif defined(__linux__) || defined(__MINGW64__)
 void p_restore_state(void) {
     const char *fName = "EEPROM.BIN";
     FILE *fp;
