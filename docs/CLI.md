@@ -38,7 +38,13 @@ LML response: manufacturer is <this>, manufacturer part number is <this>, manufa
 - CLI response:
 
 ```
-MFR_NAME,MFR_PN,MFR_SN,MFR_DATA
+dbg: <any debug/developer help info line starts with "dbg:">
+MC_TYPE = <MMC or TMC>
+I2C_ADDR = <I2C address>
+MFR_NAME = <manufacturer name>
+MFR_PN = <manufacturer part number>
+MFR_SN = <manufacturer serial number>
+MFR_DATA = <manufacturer optional data>
 ```
 
 - CLI prompt after command:
