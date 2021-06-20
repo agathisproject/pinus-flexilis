@@ -1,0 +1,23 @@
+name: devel-compile
+
+on:
+  push:
+    branches: [ devel ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: make
+        run: |
+          mkdir build
+          cd build
+          cmake ..
+          make
+      - name: upload artifacts
+        uses: actions/upload-artifact@v2.2.4
+        with:
+          name: pinus-flexilis
+          path: build/pinus-flexilis
