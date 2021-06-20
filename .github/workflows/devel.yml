@@ -2,7 +2,8 @@ name: devel-compile
 
 on:
   push:
-    branches: [ devel ]
+    branches:
+    - devel
   workflow_dispatch:
 
 jobs:
