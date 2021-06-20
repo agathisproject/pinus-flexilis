@@ -30,7 +30,7 @@ typedef struct {
     const char cmd[CLI_WORD_SIZE]; /**< command */
     const char argDesc[CMD_ARG_DESC_SIZE]; /**< argument description */
     const char cmdHelp[CMD_HELP_SIZE]; /**< command help/description */
-    uint8_t in_group;
+    uint8_t group;
     uint8_t next_group;
     CLI_CMD_RETURN_t (*fptr)(CLI_PARSED_CMD_t *cmdp);
 } CLI_CMD_t;

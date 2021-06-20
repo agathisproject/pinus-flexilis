@@ -11,9 +11,12 @@
 
 enum {
     CMD_QUESTION = 0,
+    CMD_TFUN,
     CMD_DEV,
     CMD_MOD,
     CMD_PWR,
+    CMD_V5_SRC,
+    CMD_V5_LOAD,
 #if MOD_HAS_CLK
     CMD_CLK,
 #endif
@@ -37,9 +40,12 @@ unsigned int CLI_getCmdCnt(void) {
 }
 
 CLI_CMD_RETURN_t info(CLI_PARSED_CMD_t *cmdp);
+CLI_CMD_RETURN_t tfun(CLI_PARSED_CMD_t *cmdp);
 CLI_CMD_RETURN_t dev(CLI_PARSED_CMD_t *cmdp);
 CLI_CMD_RETURN_t mod(CLI_PARSED_CMD_t *cmdp);
 CLI_CMD_RETURN_t pwr(CLI_PARSED_CMD_t *cmdp);
+CLI_CMD_RETURN_t v5_src(CLI_PARSED_CMD_t *cmdp);
+CLI_CMD_RETURN_t v5_load(CLI_PARSED_CMD_t *cmdp);
 #if MOD_HAS_CLK
 CLI_CMD_RETURN_t clk(CLI_PARSED_CMD_t *cmdp);
 #endif
@@ -52,17 +58,20 @@ CLI_CMD_RETURN_t jtag(CLI_PARSED_CMD_t *cmdp);
 
 static CLI_CMD_t p_CMDS_ARRAY[CMD_CNT] = {
     {"?", "", "show module info", 0, 0, &info},
-    {"dev", "", "show devices", 0, 1, &dev},
+    {"tfun", "", "trunk functions", 0, 1, &tfun},
+    {"dev", "", "show devices", 0, 0, &dev},
     {"mod", "", "show modules", 0, 0, &mod},
-    {"pwr", "", "device", 1, 1, &pwr},
+    {"pwr", "", "power", 1, 2, &pwr},
+    {"v5_src", "[on|off]", "V5 source switch", 2, 2, &v5_src},
+    {"v5_load", "[on|off]", "V5 load switch", 2, 2, &v5_load},
 #if MOD_HAS_CLK
-    {"clk", "", "device", 1, 1, &clk},
+    {"clk", "", "clock", 1, 1, &clk},
 #endif
 #if MOD_HAS_1PPS
-    {"1pps", "", "device", 1, 1, &pps},
+    {"1pps", "", "pulse per sec", 1, 1, &pps},
 #endif
 #if MOD_HAS_JTAG
-    {"jtag", "", "device", 1, 1, &jtag},
+    {"jtag", "", "JTAG", 1, 1, &jtag},
 #endif
 };
 
@@ -74,13 +83,27 @@ CLI_CMD_RETURN_t info(CLI_PARSED_CMD_t *cmdp) {
     }
 
     if (MOD_STATE.flags & AG_FLAG_TMC) {
-        printf("TMC, addr %d\n", MOD_STATE.addr_d);
+        printf("MC_TYPE = TMC\n");
     } else {
-        printf("MMC, addr %d\n", MOD_STATE.addr_d);
+        printf("MC_TYPE = MMC\n");
     }
-    printf("%s\n", MOD_STATE.mfr_name);
-    printf("%s\n", MOD_STATE.mfr_pn);
-    printf("%s\n", MOD_STATE.mfr_sn);
+    printf("MC_ADDR = %d\n", MOD_STATE.addr_d);
+    printf("MFR_NAME = %s\n", MOD_STATE.mfr_name);
+    printf("MFR_PN = %s\n", MOD_STATE.mfr_pn);
+    printf("MFR_SN = %s\n", MOD_STATE.mfr_sn);
+    return CMD_DONE;
+}
+
+CLI_CMD_RETURN_t tfun(CLI_PARSED_CMD_t *cmdp) {
+    if (cmdp->nParams != 0) {
+        return CMD_WRONG_N;
+    }
+
+//    for (unsigned int i = 0; i < CLI_getCmdCnt(); i++) {
+//        if (CMDS[i].group == 1) {
+//            printf("%s\n", CMDS[i].cmd);
+//        }
+//    }
     return CMD_DONE;
 }
 
@@ -89,11 +112,8 @@ CLI_CMD_RETURN_t dev(CLI_PARSED_CMD_t *cmdp) {
         return CMD_WRONG_N;
     }
 
-    for (unsigned int i = 0; i < CLI_getCmdCnt(); i++) {
-        if (CMDS[i].in_group == 1) {
-            printf("%s\n", CMDS[i].cmd);
-        }
-    }
+    printf("dev1\n");
+    printf("dev2\n");
     return CMD_DONE;
 }
 
@@ -116,6 +136,51 @@ CLI_CMD_RETURN_t pwr(CLI_PARSED_CMD_t *cmdp) {
     if (cmdp->nParams != 0) {
         return CMD_WRONG_N;
     }
+
+    printf("V5_SRC = OFF\n");
+    printf("V5_LOAD = OFF\n");
+    printf("I5 = 0.0A\n");
+    printf("I3 = 0.0A\n");
+
+    printf("SRC_I5_NOM = 0.0A\n");
+    printf("SRC_I5_CUTOFF = 0.0A\n");
+    printf("SRC_I3_NOM = 0.0A\n");
+    printf("SRC_I3_CUTOFF = 0.0A\n");
+
+    printf("LOAD_I5_NOM = 0.0A\n");
+    printf("LOAD_I5_CUTOFF = 0.0A\n");
+    printf("LOAD_I3_NOM = 0.0A\n");
+    return CMD_DONE;
+}
+
+CLI_CMD_RETURN_t v5_src(CLI_PARSED_CMD_t *cmdp) {
+    if (cmdp->nParams != 1) {
+        return CMD_WRONG_N;
+    }
+
+    if (strncmp(cmdp->params[0], "on", 2) == 0) {
+        printf("on\n");
+    } else if (strncmp(cmdp->params[0], "off", 3) == 0) {
+        printf("off\n");
+    } else {
+        return CMD_WRONG_N;
+    };
+
+    return CMD_DONE;
+}
+
+CLI_CMD_RETURN_t v5_load(CLI_PARSED_CMD_t *cmdp) {
+    if (cmdp->nParams != 1) {
+        return CMD_WRONG_N;
+    }
+
+    if (strncmp(cmdp->params[1], "on", 2) == 0) {
+        printf("on\n");
+    } else if (strncmp(cmdp->params[1], "off", 3) == 0) {
+        printf("off\n");
+    } else {
+        return CMD_WRONG_N;
+    };
 
     return CMD_DONE;
 }

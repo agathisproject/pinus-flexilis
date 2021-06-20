@@ -97,17 +97,25 @@ void p_restore_state(void) {
         perror("CANNOT open file");
         exit(EXIT_FAILURE);
     }
+
     fseek(fp, 0, SEEK_SET);
+    uint8_t ver = (uint8_t) fgetc(fp);
+    if (ver == 0xFF) {
+        fclose(fp);
+        return;
+    }
+
+    fseek(fp, 16, SEEK_SET);
     for (unsigned int i = 0; i < 15; i++) {
         MOD_STATE.mfr_name[i] = (char) fgetc(fp);
     }
     MOD_STATE.mfr_name[15] = '\0';
-    fseek(fp, 16, SEEK_SET);
+    fseek(fp, 32, SEEK_SET);
     for (unsigned int i = 0; i < 15; i++) {
         MOD_STATE.mfr_pn[i] = (char) fgetc(fp);
     }
     MOD_STATE.mfr_pn[15] = '\0';
-    fseek(fp, 32, SEEK_SET);
+    fseek(fp, 48, SEEK_SET);
     for (unsigned int i = 0; i < 15; i++) {
         MOD_STATE.mfr_sn[i] = (char) fgetc(fp);
     }

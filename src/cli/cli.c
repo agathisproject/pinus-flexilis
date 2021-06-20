@@ -28,9 +28,9 @@ uint8_t p_CLI_GetChar(void) {
 static char p_CLI_BUFF[CLI_BUFF_SIZE + 1] = { 0 };
 static char p_CLI_PROMPT[CLI_PROMPT_SIZE] = { 0 };
 
-static CLI_PARSED_CMD_t p_PARSED_CMD = {"\0", 0, {"\0", "\0", "\0", "\0"}};
+static CLI_PARSED_CMD_t p_PARSED_CMD = {"\0", 0, {"", "", "", ""}};
 
-static CLI_ENV_t p_CLI_ENV = {0, 0};
+static CLI_ENV_t p_CLI_ENV = {{0, 0, 0, 0, 0, 0, 0, 0}, 0};
 
 char * CLI_getPrompt(void) {
     return p_CLI_PROMPT;
@@ -43,12 +43,12 @@ void CLI_setPrompt(const char *str) {
 void p_Make_Prompt(void) {
     memset(p_CLI_PROMPT, 0, CLI_PROMPT_SIZE);
 
-    if (p_CLI_ENV.group != 0) {
+    if (p_CLI_ENV.groupStack[p_CLI_ENV.groupStackIdx] != 0) {
         strncat(p_CLI_PROMPT, "up ", (CLI_PROMPT_SIZE - 1));
     }
 
     for (unsigned int i = 0; i < CLI_getCmdCnt(); i++) {
-        if (CMDS[i].in_group == p_CLI_ENV.group) {
+        if (CMDS[i].group == p_CLI_ENV.groupStack[p_CLI_ENV.groupStackIdx]) {
             strncat(p_CLI_PROMPT, CMDS[i].cmd, (CLI_PROMPT_SIZE - 1));
             strncat(p_CLI_PROMPT, " ", (CLI_PROMPT_SIZE - 1));
         }
@@ -163,10 +163,12 @@ void CLI_execute(void) {
 //        return;
 //    }
 
-    if ((strncmp(p_PARSED_CMD.cmd, "up", 2) == 0) && (p_CLI_ENV.group != 0)) {
-        uint8_t tmp = p_CLI_ENV.group;
-        p_CLI_ENV.group = p_CLI_ENV.prev_group;
-        p_CLI_ENV.prev_group = tmp;
+    if (strncmp(p_PARSED_CMD.cmd, "up", 2) == 0) {
+        if (p_CLI_ENV.groupStackIdx > 0) {
+            p_CLI_ENV.groupStackIdx --;
+        } else {
+            printf("ERROR: CLI groupStack under-flow\n");
+        };
 
         p_Make_Prompt();
         return;
@@ -175,7 +177,7 @@ void CLI_execute(void) {
     CLI_CMD_RETURN_t cmdRet = CMD_DONE;
     for (i = 0; i < CLI_getCmdCnt(); i++) {
         if ((strncmp(p_PARSED_CMD.cmd, CMDS[i].cmd, CLI_WORD_SIZE) == 0)
-                && (p_CLI_ENV.group == CMDS[i].in_group)) {
+                && (p_CLI_ENV.groupStack[p_CLI_ENV.groupStackIdx] == CMDS[i].group)) {
             cmdRet = CMDS[i].fptr(&p_PARSED_CMD);
             break;
         }
@@ -190,9 +192,13 @@ void CLI_execute(void) {
         printf("WRONG arguments\n");
         printf("  %s %s\n", CMDS[i].cmd, CMDS[i].argDesc);
     } else {
-        if (CMDS[i].next_group != p_CLI_ENV.group) {
-            p_CLI_ENV.prev_group = p_CLI_ENV.group;
-            p_CLI_ENV.group = CMDS[i].next_group;
+        if (CMDS[i].next_group != p_CLI_ENV.groupStack[p_CLI_ENV.groupStackIdx]) {
+            if (p_CLI_ENV.groupStackIdx < (CLI_ENV_GRP_STACK_SIZE - 1)) {
+                p_CLI_ENV.groupStackIdx ++;
+                p_CLI_ENV.groupStack[p_CLI_ENV.groupStackIdx] = CMDS[i].next_group;
+            } else {
+                printf("ERROR: CLI groupStack over-flow\n");
+            }
         }
     }
     p_Make_Prompt();

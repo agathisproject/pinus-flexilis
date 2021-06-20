@@ -8,9 +8,10 @@
 
 #include "cli_types.h"
 
+#define CLI_ENV_GRP_STACK_SIZE 8
 typedef struct {
-    uint8_t group;
-    uint8_t prev_group;
+    uint8_t groupStack[CLI_ENV_GRP_STACK_SIZE];
+    uint8_t groupStackIdx;
 } CLI_ENV_t;
 
 extern CLI_CMD_t *CMDS;
