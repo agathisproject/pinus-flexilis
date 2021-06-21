@@ -164,7 +164,7 @@ CLI_CMD_RETURN_t v5_src(CLI_PARSED_CMD_t *cmdp) {
         printf("off\n");
     } else {
         return CMD_WRONG_N;
-    };
+    }
 
     return CMD_DONE;
 }
@@ -174,13 +174,13 @@ CLI_CMD_RETURN_t v5_load(CLI_PARSED_CMD_t *cmdp) {
         return CMD_WRONG_N;
     }
 
-    if (strncmp(cmdp->params[1], "on", 2) == 0) {
+    if (strncmp(cmdp->params[0], "on", 2) == 0) {
         printf("on\n");
-    } else if (strncmp(cmdp->params[1], "off", 3) == 0) {
+    } else if (strncmp(cmdp->params[0], "off", 3) == 0) {
         printf("off\n");
     } else {
         return CMD_WRONG_N;
-    };
+    }
 
     return CMD_DONE;
 }
