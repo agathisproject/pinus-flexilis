@@ -17,10 +17,11 @@ jobs:
           cd build
           cmake ..
           make
+          cp pinus-flexilis ..
       - name: upload artifacts
         uses: actions/upload-artifact@v2.2.4
         with:
-          name: pinus-flexilis
+          name: linux-x86_64
           path: |
-            build/pinus-flexilis
+            pinus-flexilis
             EEPROM.BIN
