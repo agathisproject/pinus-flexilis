@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-#ifndef SIM_7Y7NKE833U9TJQAD
-#define SIM_7Y7NKE833U9TJQAD
+#ifndef STATE_7Y7NKE833U9TJQAD
+#define STATE_7Y7NKE833U9TJQAD
 /** @file */
 
 #include <stdint.h>
@@ -12,4 +12,4 @@ typedef struct {
 
 extern SIM_STATE_t SIM_STATE;
 
-#endif /* SIM_7Y7NKE833U9TJQAD */
+#endif /* STATE_7Y7NKE833U9TJQAD */

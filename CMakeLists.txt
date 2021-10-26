@@ -23,6 +23,7 @@ add_library(agathis STATIC
 
 add_library(sim STATIC
         ${CMAKE_CURRENT_SOURCE_DIR}/src/sim/state.c
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/sim/misc.c
         )
 
 add_executable(${PROJECT_NAME}

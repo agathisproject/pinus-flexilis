@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <time.h>
 #include <unistd.h>
 
 #include "cli/cli.h"
@@ -29,6 +30,7 @@ void sim_init(int argc, char *argv[]) {
         }
     }
     printf("Agathis CLI simulator\n");
+    srand((unsigned int) time(NULL));
 }
 
 int main(int argc, char *argv[]) {

@@ -8,6 +8,7 @@
 
 #include "../agathis/config.h"
 #include "../agathis/base.h"
+#include "../sim/misc.h"
 
 enum {
     CMD_QUESTION = 0,
@@ -139,17 +140,17 @@ CLI_CMD_RETURN_t pwr(CLI_PARSED_CMD_t *cmdp) {
 
     printf("V5_SRC = OFF\n");
     printf("V5_LOAD = OFF\n");
-    printf("I5 = 0.0A\n");
-    printf("I3 = 0.0A\n");
+    printf("I5 = %.3f A\n", getValue_random(0.1f, 5));
+    printf("I3 = %.3f A\n", getValue_random(0.5f, 5));
 
-    printf("SRC_I5_NOM = 0.0A\n");
-    printf("SRC_I5_CUTOFF = 0.0A\n");
-    printf("SRC_I3_NOM = 0.0A\n");
-    printf("SRC_I3_CUTOFF = 0.0A\n");
+    printf("SRC_I5_NOM = 0.0 A\n");
+    printf("SRC_I5_CUTOFF = 0.0 A\n");
+    printf("SRC_I3_NOM = 0.0 A\n");
+    printf("SRC_I3_CUTOFF = 0.0 A\n");
 
-    printf("LOAD_I5_NOM = 0.0A\n");
-    printf("LOAD_I5_CUTOFF = 0.0A\n");
-    printf("LOAD_I3_NOM = 0.0A\n");
+    printf("LOAD_I5_NOM = 0.0 A\n");
+    printf("LOAD_I5_CUTOFF = 0.0 A\n");
+    printf("LOAD_I3_NOM = 0.0 A\n");
     return CMD_DONE;
 }
 
