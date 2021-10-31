@@ -14,6 +14,7 @@
 #include "stdlib.h"
 #include "sys/stat.h"
 #include "../sim/state.h"
+#include "../sim/misc.h"
 #endif
 #include "config.h"
 
@@ -175,3 +176,31 @@ void ag_init(void) {
     printf("%s addr: 0x%02X / 0x%02X (0x%02X)\n", PREFIX_MC,
            MOD_STATE.addr_d, MOD_STATE.addr_u, MOD_STATE.addr_i2c);
 }
+
+#if defined(__AVR__)
+float ag_get_I5_NOM(void) {
+    return 0.0f;
+}
+#elif defined(__XC16__)
+float ag_get_I5_NOM(void) {
+    return 0.0f;
+}
+#else
+float ag_get_I5_NOM(void) {
+    return getValue_random((I5_NOM * 0.7f), 5);
+}
+#endif
+
+#if defined(__AVR__)
+float ag_get_I3_NOM(void) {
+    return 0.0f;
+}
+#elif defined(__XC16__)
+float ag_get_I3_NOM(void) {
+    return 0.0f;
+}
+#else
+float ag_get_I3_NOM(void) {
+    return getValue_random((I3_NOM * 0.5f), 5);
+}
+#endif

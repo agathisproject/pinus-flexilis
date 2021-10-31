@@ -32,6 +32,11 @@ typedef struct {
     char mfr_sn[16];
 } AG_MC_STATE_t;
 
+#define I5_NOM 0.1f
+#define I5_CUTOFF 0.12f
+#define I3_NOM 1.0f
+#define I3_CUTOFF 1.5f
+
 extern AG_MC_STATE_t MOD_STATE;
 
 typedef enum {
@@ -59,5 +64,9 @@ extern SemaphoreHandle_t xSemaphore_MMC;
 void ag_reset(void);
 
 void ag_init(void);
+
+float ag_get_I5_NOM(void);
+
+float ag_get_I3_NOM(void);
 
 #endif /* AGATHIS_6PLS6RVRFVYEP7NX */
