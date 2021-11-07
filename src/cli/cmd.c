@@ -142,14 +142,14 @@ CLI_CMD_RETURN_t pwr(CLI_PARSED_CMD_t *cmdp) {
     printf("I5 = %.3f A\n", ag_get_I5_NOM());
     printf("I3 = %.3f A\n", ag_get_I3_NOM());
 
-    printf("SRC_I5_NOM = %.3f A\n", I5_NOM);
-    printf("SRC_I5_CUTOFF = %.3f A\n", I5_CUTOFF);
-    printf("SRC_I3_NOM = %.3f A\n", I3_NOM);
-    printf("SRC_I3_CUTOFF = %.3f A\n", I3_CUTOFF);
+    printf("SRC_I5_NOM = %.3f A\n", MOD_STATE.i5_nom);
+    printf("SRC_I5_CUTOFF = %.3f A\n", MOD_STATE.i5_cutoff);
+    printf("SRC_I3_NOM = %.3f A\n", MOD_STATE.i3_nom);
+    printf("SRC_I3_CUTOFF = %.3f A\n", MOD_STATE.i3_cutoff);
 
-    printf("LOAD_I5_NOM = %.3f A\n", I5_NOM);
-    printf("LOAD_I5_CUTOFF = %.3f A\n", I5_CUTOFF);
-    printf("LOAD_I3_NOM = %.3f A\n", I3_NOM);
+    printf("LOAD_I5_NOM = %.3f A\n", MOD_STATE.i5_nom);
+    printf("LOAD_I5_CUTOFF = %.3f A\n", MOD_STATE.i5_cutoff);
+    printf("LOAD_I3_NOM = %.3f A\n", MOD_STATE.i3_nom);
     return CMD_DONE;
 }
 

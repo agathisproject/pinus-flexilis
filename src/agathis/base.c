@@ -20,7 +20,8 @@
 
 AG_MC_STATE_t MOD_STATE = {0, 0, 0,
                            0, 0, 0, 0xFFFF,
-                           "", "", ""
+                           "", "", "",
+                           0.1f, 0.12f, 1.0f, 1.5f,
                           };
 
 AG_MC_SCAN_INFO_t REMOTE_MODS[MC_MAX_CNT - 1] = {
@@ -70,12 +71,8 @@ void p_gpio_addr_u(uint8_t addr) {
 }
 #endif
 
-#if defined(__AVR__) || defined(__XC16__)
-void p_restore_state(void) {
-
-}
-#elif defined(__linux__) || defined(__MINGW64__)
-void p_restore_state(void) {
+#if defined(__linux__) || defined(__MINGW64__)
+void p_eeprom_test(void) {
     const char *fName = "EEPROM.BIN";
     FILE *fp;
     struct stat s;
@@ -92,6 +89,19 @@ void p_restore_state(void) {
         fclose(fp);
         return;
     }
+}
+#endif
+
+#if defined(__AVR__) || defined(__XC16__)
+uint8_t p_get_eeprom_byte(uint16_t addr) {
+    return 0xFF;
+}
+#elif defined(__linux__) || defined(__MINGW64__)
+uint8_t p_get_eeprom_byte(uint16_t addr) {
+    const char *fName = "EEPROM.BIN";
+    FILE *fp;
+
+    p_eeprom_test();
 
     fp = fopen(fName, "rb");
     if (!fp) {
@@ -99,31 +109,94 @@ void p_restore_state(void) {
         exit(EXIT_FAILURE);
     }
 
-    fseek(fp, 0, SEEK_SET);
-    uint8_t ver = (uint8_t) fgetc(fp);
-    if (ver == 0xFF) {
-        fclose(fp);
-        return;
+    fseek(fp, addr, SEEK_SET);
+    uint8_t tmp = (uint8_t) fgetc(fp);
+    fclose(fp);
+
+    return tmp;
+}
+#endif
+
+#if defined(__AVR__) || defined(__XC16__)
+void p_get_eeprom_str(uint16_t addr, uint8_t len, char *str) {
+
+}
+#elif defined(__linux__) || defined(__MINGW64__)
+void p_get_eeprom_str(uint16_t addr, uint8_t len, char *str) {
+    const char *fName = "EEPROM.BIN";
+    FILE *fp;
+
+    p_eeprom_test();
+
+    fp = fopen(fName, "rb");
+    if (!fp) {
+        perror("CANNOT open file");
+        exit(EXIT_FAILURE);
     }
 
-    fseek(fp, 16, SEEK_SET);
-    for (unsigned int i = 0; i < 15; i++) {
-        MOD_STATE.mfr_name[i] = (char) fgetc(fp);
+    fseek(fp, addr, SEEK_SET);
+    for (unsigned int i = 0; i < len; i++) {
+        str[i] = (char) fgetc(fp);
     }
-    MOD_STATE.mfr_name[15] = '\0';
-    fseek(fp, 32, SEEK_SET);
-    for (unsigned int i = 0; i < 15; i++) {
-        MOD_STATE.mfr_pn[i] = (char) fgetc(fp);
-    }
-    MOD_STATE.mfr_pn[15] = '\0';
-    fseek(fp, 48, SEEK_SET);
-    for (unsigned int i = 0; i < 15; i++) {
-        MOD_STATE.mfr_sn[i] = (char) fgetc(fp);
-    }
-    MOD_STATE.mfr_sn[15] = '\0';
+    str[len] = '\0';
+
     fclose(fp);
 }
 #endif
+
+/**
+ * read floating point value from EEPROM
+ *
+ * Reads a 16b value from EEPROM as a integer, then divide by 100
+ * Possible values are between -327.68 and 327.67
+ * @param addr
+ * @param f
+ * @return
+ */
+#if defined(__AVR__) || defined(__XC16__)
+float p_get_eeprom_float(uint16_t addr) {
+    return 0.0;
+}
+#elif defined(__linux__) || defined(__MINGW64__)
+float p_get_eeprom_float(uint16_t addr) {
+    const char *fName = "EEPROM.BIN";
+    FILE *fp;
+
+    p_eeprom_test();
+
+    fp = fopen(fName, "rb");
+    if (!fp) {
+        perror("CANNOT open file");
+        exit(EXIT_FAILURE);
+    }
+
+    int16_t tmp = 0;
+    fseek(fp, addr, SEEK_SET);
+    tmp = (int16_t) fgetc(fp);
+    fseek(fp, (addr + 1), SEEK_SET);
+    tmp += (int16_t) (fgetc(fp) << 8);
+
+    fclose(fp);
+    return ((float) tmp / 100.0f);
+}
+#endif
+
+void p_restore_state(void) {
+    uint8_t ver = p_get_eeprom_byte(0);
+    printf("%s EEPROM ver %d\n", PREFIX_MC, ver);
+    if (ver == 0xFF) {
+        return;
+    }
+
+    p_get_eeprom_str(16, 16, MOD_STATE.mfr_name);
+    p_get_eeprom_str(32, 16, MOD_STATE.mfr_pn);
+    p_get_eeprom_str(48, 16, MOD_STATE.mfr_sn);
+
+    MOD_STATE.i5_nom = p_get_eeprom_float(64);
+    MOD_STATE.i5_cutoff = p_get_eeprom_float(66);
+    MOD_STATE.i3_nom = p_get_eeprom_float(68);
+    MOD_STATE.i3_cutoff = p_get_eeprom_float(70);
+}
 
 #if defined(__AVR__)
 void ag_reset(void) {
@@ -158,7 +231,6 @@ void ag_init(void) {
            MOD_STATE.caps, MOD_STATE.flags);
 
     MOD_STATE.addr_d = p_gpio_addr_d();
-    p_restore_state();
     MOD_STATE.addr_i2c = (I2C_OFFSET + MOD_STATE.addr_d);
     if (MOD_STATE.addr_d == 0) {
         MOD_STATE.flags |= AG_FLAG_TMC;
@@ -171,6 +243,8 @@ void ag_init(void) {
         MOD_STATE.addr_u = (MOD_STATE.addr_d + 1);
     }
     p_gpio_addr_u(MOD_STATE.addr_u);
+
+    p_restore_state();
 
     MOD_STATE.last_err = 0;
     printf("%s addr: 0x%02X / 0x%02X (0x%02X)\n", PREFIX_MC,
@@ -187,7 +261,7 @@ float ag_get_I5_NOM(void) {
 }
 #else
 float ag_get_I5_NOM(void) {
-    return getValue_random((I5_NOM * 0.7f), 5);
+    return getValue_random((MOD_STATE.i5_nom * 0.7f), 5);
 }
 #endif
 
@@ -201,6 +275,6 @@ float ag_get_I3_NOM(void) {
 }
 #else
 float ag_get_I3_NOM(void) {
-    return getValue_random((I3_NOM * 0.5f), 5);
+    return getValue_random((MOD_STATE.i3_nom * 0.5f), 5);
 }
 #endif

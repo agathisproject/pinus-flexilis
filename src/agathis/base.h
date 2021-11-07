@@ -30,12 +30,11 @@ typedef struct {
     char mfr_name[16];
     char mfr_pn[16];
     char mfr_sn[16];
+    float i5_nom;
+    float i5_cutoff;
+    float i3_nom;
+    float i3_cutoff;
 } AG_MC_STATE_t;
-
-#define I5_NOM 0.1f
-#define I5_CUTOFF 0.12f
-#define I3_NOM 1.0f
-#define I3_CUTOFF 1.5f
 
 extern AG_MC_STATE_t MOD_STATE;
 
