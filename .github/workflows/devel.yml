@@ -25,3 +25,4 @@ jobs:
           path: |
             pinus-flexilis
             EEPROM.BIN
+            config.ini

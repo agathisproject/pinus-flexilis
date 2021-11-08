@@ -12,7 +12,6 @@
 #include "../platform.h"
 #elif defined(__linux__) || defined(__MINGW64__)
 #include "stdlib.h"
-#include "sys/stat.h"
 #include "../sim/state.h"
 #include "../sim/misc.h"
 #endif
@@ -71,37 +70,14 @@ void p_gpio_addr_u(uint8_t addr) {
 }
 #endif
 
-#if defined(__linux__) || defined(__MINGW64__)
-void p_eeprom_test(void) {
-    const char *fName = "EEPROM.BIN";
-    FILE *fp;
-    struct stat s;
-
-    if (stat(fName, &s) == -1) {
-        fp = fopen(fName, "wb");
-        if (!fp) {
-            perror("CANNOT create file");
-            exit(EXIT_FAILURE);
-        }
-        for (unsigned int i = 0; i < 1024; i ++) {
-            fputc(0xFF, fp);
-        }
-        fclose(fp);
-        return;
-    }
-}
-#endif
-
 #if defined(__AVR__) || defined(__XC16__)
 uint8_t p_get_eeprom_byte(uint16_t addr) {
     return 0xFF;
 }
 #elif defined(__linux__) || defined(__MINGW64__)
 uint8_t p_get_eeprom_byte(uint16_t addr) {
-    const char *fName = "EEPROM.BIN";
+    const char *fName = SIM_STATE.eeprom_path;
     FILE *fp;
-
-    p_eeprom_test();
 
     fp = fopen(fName, "rb");
     if (!fp) {
@@ -123,10 +99,8 @@ void p_get_eeprom_str(uint16_t addr, uint8_t len, char *str) {
 }
 #elif defined(__linux__) || defined(__MINGW64__)
 void p_get_eeprom_str(uint16_t addr, uint8_t len, char *str) {
-    const char *fName = "EEPROM.BIN";
+    const char *fName = SIM_STATE.eeprom_path;
     FILE *fp;
-
-    p_eeprom_test();
 
     fp = fopen(fName, "rb");
     if (!fp) {
@@ -159,10 +133,8 @@ float p_get_eeprom_float(uint16_t addr) {
 }
 #elif defined(__linux__) || defined(__MINGW64__)
 float p_get_eeprom_float(uint16_t addr) {
-    const char *fName = "EEPROM.BIN";
+    const char *fName = SIM_STATE.eeprom_path;
     FILE *fp;
-
-    p_eeprom_test();
 
     fp = fopen(fName, "rb");
     if (!fp) {

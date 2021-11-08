@@ -7,6 +7,8 @@
 #include <stdint.h>
 
 typedef struct {
+    char *eeprom_path;
+    char *config_path;
     uint8_t addr_d;
 } SIM_STATE_t;
 
