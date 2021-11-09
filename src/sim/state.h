@@ -6,9 +6,11 @@
 
 #include <stdint.h>
 
+#define SIM_PATH_LEN 64
+
 typedef struct {
-    char *eeprom_path;
-    char *config_path;
+    char eeprom_path[SIM_PATH_LEN];
+    char config_path[SIM_PATH_LEN];
     uint8_t addr_d;
 } SIM_STATE_t;
 

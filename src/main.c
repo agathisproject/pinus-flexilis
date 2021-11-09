@@ -11,6 +11,7 @@
 #include "cli/cli.h"
 #include "agathis/base.h"
 #include "sim/state.h"
+#include "opt/ini/ini.h"
 
 void p_show_help(const char *appName) {
     printf("Usage: pinus-flexilis [OPTIONS]\n");
@@ -57,26 +58,35 @@ void p_test_config(void) {
     }
 }
 
-void p_load_config(void) {
+typedef struct {
+    uint8_t addr_d;
+} config_ini_t;
 
+static int p_ini_handler(void* user, const char* section, const char* name,
+                         const char* value) {
+    config_ini_t *pconfig = (config_ini_t *)user;
+
+    if ((strcmp(section, "default") == 0) && (strcmp(name, "addr_d") == 0)) {
+        pconfig->addr_d = (uint8_t) strtol(value, NULL, 16);
+    } else {
+        return 0;  /* unknown section/name, error */
+    }
+    return 1;
 }
 
-#define FILE_LEN 64
+void p_load_config(void) {
+    config_ini_t config;
+
+    if (ini_parse(SIM_STATE.config_path, p_ini_handler, &config) < 0) {
+        printf("CANNOT PARSE '%s'\n", SIM_STATE.config_path);
+    }
+
+    SIM_STATE.addr_d = config.addr_d;
+}
 
 void sim_init(int argc, char *argv[]) {
-    SIM_STATE.eeprom_path = (char *) malloc(FILE_LEN * sizeof(char));
-    if (SIM_STATE.eeprom_path == NULL) {
-        printf("CANNOT allocate memory: %s\n", __func__);
-        exit(EXIT_FAILURE);
-    }
-    strncpy(SIM_STATE.eeprom_path, "EEPROM.BIN", FILE_LEN);
-
-    SIM_STATE.config_path = (char *) malloc(FILE_LEN * sizeof(char));
-    if (SIM_STATE.config_path == NULL) {
-        printf("CANNOT allocate memory: %s\n", __func__);
-        exit(EXIT_FAILURE);
-    }
-    strncpy(SIM_STATE.config_path, "config.ini", FILE_LEN);
+    strncpy(SIM_STATE.eeprom_path, "EEPROM.BIN", SIM_PATH_LEN);
+    strncpy(SIM_STATE.config_path, "config.ini", SIM_PATH_LEN);
 
     int opt = 0;
 
@@ -86,29 +96,29 @@ void sim_init(int argc, char *argv[]) {
                 p_show_help(argv[0]);
                 break;
             case 'e':
-                if (strlen(optarg) <= (FILE_LEN - 1)) {
+                if (strlen(optarg) <= (SIM_PATH_LEN - 1)) {
                     if (strstr(optarg, ".BIN") != NULL) {
-                        strncpy(SIM_STATE.eeprom_path, optarg, FILE_LEN);
+                        strncpy(SIM_STATE.eeprom_path, optarg, SIM_PATH_LEN);
                     } else {
                         printf("INCORRECT file name: '%s', using default\n", optarg);
-                        strncpy(SIM_STATE.eeprom_path, "EEPROM.BIN", FILE_LEN);
+                        strncpy(SIM_STATE.eeprom_path, "EEPROM.BIN", SIM_PATH_LEN);
                     }
                 } else {
                     printf("INCORRECT file name: '%s', using default\n", optarg);
-                    strncpy(SIM_STATE.eeprom_path, "EEPROM.BIN", FILE_LEN);
+                    strncpy(SIM_STATE.eeprom_path, "EEPROM.BIN", SIM_PATH_LEN);
                 }
                 break;
             case 'c':
-                if (strlen(optarg) <= (FILE_LEN - 1)) {
+                if (strlen(optarg) <= (SIM_PATH_LEN - 1)) {
                     if (strstr(optarg, ".ini") != NULL) {
-                        strncpy(SIM_STATE.config_path, optarg, FILE_LEN);
+                        strncpy(SIM_STATE.config_path, optarg, SIM_PATH_LEN);
                     } else {
                         printf("INCORRECT file name: '%s', using default\n", optarg);
-                        strncpy(SIM_STATE.config_path, "config.ini", FILE_LEN);
+                        strncpy(SIM_STATE.config_path, "config.ini", SIM_PATH_LEN);
                     }
                 } else {
                     printf("INCORRECT file name: '%s', using default\n", optarg);
-                    strncpy(SIM_STATE.config_path, "config.ini", FILE_LEN);
+                    strncpy(SIM_STATE.config_path, "config.ini", SIM_PATH_LEN);
                 }
                 break;
             default:

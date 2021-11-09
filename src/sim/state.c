@@ -2,4 +2,4 @@
 
 #include "state.h"
 
-SIM_STATE_t SIM_STATE = {"EEPROM.BIN",  "config.ini", 0x1};
+SIM_STATE_t SIM_STATE = {"EEPROM.BIN", "config.ini", 0x1};
