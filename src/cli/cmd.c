@@ -82,7 +82,7 @@ CLI_CMD_RETURN_t info(CLI_PARSED_CMD_t *cmdp) {
         return CMD_WRONG_N;
     }
 
-    if (MOD_STATE.flags & AG_FLAG_TMC) {
+    if (MOD_STATE.caps_ext & AG_CAP_EXT_TMC) {
         printf("MC_TYPE = TMC\n");
     } else {
         printf("MC_TYPE = MMC\n");
@@ -122,7 +122,7 @@ CLI_CMD_RETURN_t mod(CLI_PARSED_CMD_t *cmdp) {
         return CMD_WRONG_N;
     }
 
-    if (!(MOD_STATE.flags & AG_FLAG_TMC)) {
+    if (!(MOD_STATE.caps_ext & AG_CAP_EXT_TMC)) {
         return CMD_DONE;
     }
 

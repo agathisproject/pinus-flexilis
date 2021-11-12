@@ -23,8 +23,8 @@ typedef struct {
     uint8_t addr_d;        /**< down-trunk management address */
     uint8_t addr_u;        /**< up-trunk management address */
     uint8_t addr_i2c;      /**< MC I2C address */
-    uint8_t flags;
-    uint8_t caps;
+    uint8_t caps_ext;      /**< HW capabilities that should be advertised */
+    uint8_t caps_int;      /**< HW capabilities that should NOT be advertised */
     uint8_t last_err;
     uint16_t type;
     char mfr_name[16];
