@@ -17,7 +17,22 @@ add_library(cli STATIC
         ${CMAKE_CURRENT_SOURCE_DIR}/src/cli/cmd.c
 )
 
+add_library(agathis STATIC
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/agathis/base.c
+)
+
+add_library(ini STATIC
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/opt/ini/ini.c
+)
+
+add_library(sim STATIC
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/sim/state.c
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/sim/misc.c
+)
+
 add_executable(${PROJECT_NAME}
-    "src/main.c")
+    "src/main.c"
+)
 target_link_libraries(${PROJECT_NAME}
-        cli)
+        cli agathis ini sim
+)
