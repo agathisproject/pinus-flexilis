@@ -11,7 +11,7 @@
 #include "../hw/gpio.h"
 #include "../platform.h"
 #elif defined(__linux__) || defined(__MINGW64__)
-#include "stdlib.h"
+#include <stdlib.h>
 #include "../sim/state.h"
 #include "../sim/misc.h"
 #endif
