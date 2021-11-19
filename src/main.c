@@ -6,7 +6,6 @@
 #include <stdlib.h>
 #include <pthread.h>
 
-#include "sim/state.h"
 #include "sim/top.h"
 #include "cli/cli.h"
 #include "agathis/base.h"
@@ -20,6 +19,15 @@ void sigint_handler(int dummy) {
 
 void *thread_cli (void *vargp) {
     uint8_t parseSts = 1;
+    char prompt[12];
+
+    if (MOD_STATE.caps_ext & AG_CAP_EXT_TMC) {
+        snprintf(prompt, 12, "-%s@%02d-> ", "TMC", MOD_STATE.addr_d);
+    } else {
+        snprintf(prompt, 12, "-%s@%02d-> ", "MC", MOD_STATE.addr_d);
+    }
+    CLI_setPrompt(prompt);
+
     while (1) {
         printf("%s", CLI_getPrompt());
         CLI_getCmd();

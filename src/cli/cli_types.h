@@ -21,6 +21,7 @@ typedef enum {
     CMD_DONE,
     CMD_WRONG_N,
     CMD_WRONG_PARAM,
+    CMD_NOT_FOUND,
 } CLI_CMD_RETURN_t;
 
 #define CMD_ARG_DESC_SIZE 32
@@ -30,9 +31,22 @@ typedef struct {
     const char cmd[CLI_WORD_SIZE]; /**< command */
     const char argDesc[CMD_ARG_DESC_SIZE]; /**< argument description */
     const char cmdHelp[CMD_HELP_SIZE]; /**< command help/description */
-    uint8_t group;
-    uint8_t next_group;
     CLI_CMD_RETURN_t (*fptr)(CLI_PARSED_CMD_t *cmdp);
 } CLI_CMD_t;
+
+typedef struct folder CLI_FOLDER_t;
+
+#define CLI_BASE_NAME_SIZE 8
+#define CLI_TREE_DEPTH_MAX 8
+struct folder {
+    char name[CLI_BASE_NAME_SIZE];
+    uint8_t nCmds;
+    CLI_CMD_t *cmds;
+    CLI_CMD_t *cmdDefault;
+    CLI_FOLDER_t *parent;
+    CLI_FOLDER_t *child;
+    CLI_FOLDER_t *left;
+    CLI_FOLDER_t *right;
+};
 
 #endif /* CLI_BEES5G972K9T2FRP */
