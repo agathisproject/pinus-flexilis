@@ -26,6 +26,7 @@ void *thread_cli (void *vargp) {
     } else {
         snprintf(prompt, 12, "-%s@%02d-> ", "MC", MOD_STATE.addr_d);
     }
+    printf("press ? for help\n");
     CLI_setPrompt(prompt);
 
     while (1) {

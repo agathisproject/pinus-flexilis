@@ -36,7 +36,7 @@ CLI_CMD_RETURN_t cmd_dev(CLI_PARSED_CMD_t *cmdp) {
     return CMD_DONE;
 }
 
-CLI_CMD_RETURN_t cmd_mod(CLI_PARSED_CMD_t *cmdp) {
+CLI_CMD_RETURN_t cmd_mod_info(CLI_PARSED_CMD_t *cmdp) {
     if (cmdp->nParams != 0) {
         return CMD_WRONG_N;
     }
@@ -45,9 +45,24 @@ CLI_CMD_RETURN_t cmd_mod(CLI_PARSED_CMD_t *cmdp) {
         return CMD_DONE;
     }
 
-    printf("mod1\n");
-    printf("mod2\n");
-    printf("mod3\n");
+    for (int i = 0; i < MC_MAX_CNT; i ++) {
+        printf("  @%02d: ", i);
+        switch (REMOTE_MODS[i].state) {
+            case MC_NOT_PRESENT: {
+                printf("no");
+                break;
+            }
+            case MC_PRESENT: {
+                printf("yes");
+                break;
+            }
+            case MC_INVALID: {
+                printf("???");
+                break;
+            }
+        }
+        printf("\n");
+    }
     return CMD_DONE;
 }
 

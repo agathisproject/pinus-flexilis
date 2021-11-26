@@ -29,6 +29,7 @@ uint8_t p_CLI_GetChar(void) {
 
 static char p_CLI_BUFF[CLI_BUFF_SIZE + 1] = { 0 };
 static char p_CLI_PROMPT[CLI_PROMPT_SIZE] = { 0 };
+static uint8_t p_no_cmd = 0;
 
 static CLI_PARSED_CMD_t p_PARSED_CMD = {"\0", 0, {"", "", "", ""}};
 
@@ -45,9 +46,13 @@ void CLI_setPrompt(const char *str) {
 static CLI_CMD_t p_cmd_root[3]  = {
     {"info", "", "show module info", &cmd_info},
     {"dev",  "", "show devices", &cmd_dev},
-    {"mod",  "", "show modules", &cmd_mod},
 };
-static CLI_FOLDER_t p_f_root = {"", 3, p_cmd_root, NULL, NULL, NULL, NULL, NULL};
+static CLI_FOLDER_t p_f_root = {"", 2, p_cmd_root, NULL, NULL, NULL, NULL, NULL};
+
+static CLI_CMD_t p_cmd_mod[1]  = {
+    {"info", "", "show modules", &cmd_mod_info},
+};
+static CLI_FOLDER_t p_f_mod = {"mod", 1, p_cmd_mod, NULL, NULL, NULL, NULL, NULL};
 
 static CLI_FOLDER_t p_f_tfun = {"tfun", 0, NULL, NULL, NULL, NULL, NULL, NULL};
 
@@ -73,7 +78,11 @@ void CLI_init(void) {
     p_f_root.child = &p_f_tfun;
 
     p_f_tfun.parent = &p_f_root;
+    p_f_tfun.right = &p_f_mod;
     p_f_tfun.child = &p_f_pwr;
+
+    p_f_mod.parent = &p_f_root;
+    p_f_mod.left = &p_f_tfun;
 
     p_f_pwr.parent = &p_f_tfun;
     p_f_pwr.right = &p_f_clk;
@@ -186,6 +195,15 @@ uint8_t CLI_parseCmd(void) {
     return 0;
 }
 
+CLI_CMD_RETURN_t p_help(void) {
+    printf("built-in commands:\n");
+    printf("  pwd - show current path\n");
+    printf("   ls - list possible commands\n");
+    printf("   cd - change folder\n");
+
+    return CMD_DONE;
+}
+
 CLI_CMD_RETURN_t p_pwd(void) {
     unsigned int i = 0;
 
@@ -260,10 +278,18 @@ void CLI_execute(void) {
     //printf("DBG: execute %s (%d params) %d\n", p_PARSED_CMD.cmd, p_PARSED_CMD.nParams, p_CLI_ENV.group);
     if (strlen(p_PARSED_CMD.cmd) == 0) {
         if (p_CLI_ENV.folder->cmdDefault == NULL) {
+            if (p_no_cmd == 4) {
+                printf("press ? for help\n");
+                p_no_cmd = 0;
+            } else {
+                p_no_cmd ++;
+            }
             cmdRet = CMD_DONE;
         } else {
             cmdRet = p_CLI_ENV.folder->cmdDefault->fptr(&p_PARSED_CMD);
         }
+    } else if (strncmp(p_PARSED_CMD.cmd, "?", 1) == 0) {
+        cmdRet = p_help();
     } else if (strncmp(p_PARSED_CMD.cmd, "pwd", 3) == 0) {
         cmdRet = p_pwd();
     } else if (strncmp(p_PARSED_CMD.cmd, "ls", 2) == 0) {
