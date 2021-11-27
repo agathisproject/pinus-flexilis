@@ -45,7 +45,7 @@ CLI_CMD_RETURN_t cmd_mod_info(CLI_PARSED_CMD_t *cmdp) {
         return CMD_DONE;
     }
 
-    for (int i = 0; i < MC_MAX_CNT; i ++) {
+    for (int i = 1; i < MC_MAX_CNT; i ++) {
         printf("  @%02d: ", i);
         switch (REMOTE_MODS[i].state) {
             case MC_NOT_PRESENT: {

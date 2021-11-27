@@ -52,7 +52,7 @@ static CLI_FOLDER_t p_f_root = {"", 2, p_cmd_root, NULL, NULL, NULL, NULL, NULL}
 static CLI_CMD_t p_cmd_mod[1]  = {
     {"info", "", "show modules", &cmd_mod_info},
 };
-static CLI_FOLDER_t p_f_mod = {"mod", 1, p_cmd_mod, NULL, NULL, NULL, NULL, NULL};
+static CLI_FOLDER_t p_f_mod = {"mod", 1, p_cmd_mod, &p_cmd_mod[0], NULL, NULL, NULL, NULL};
 
 static CLI_FOLDER_t p_f_tfun = {"tfun", 0, NULL, NULL, NULL, NULL, NULL, NULL};
 
