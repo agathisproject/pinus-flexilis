@@ -4,14 +4,21 @@
 #define STATE_7Y7NKE833U9TJQAD
 /** @file */
 
+#include <mqueue.h>
 #include <stdint.h>
 
 #define SIM_PATH_LEN 64
+#define SIM_MQ_PREFIX "agathis_"
+
+#define SIM_FLAG_NO_CONSOLE 0x00000001
 
 typedef struct {
     char eeprom_path[SIM_PATH_LEN];
     char config_path[SIM_PATH_LEN];
-    uint8_t addr_d;
+    mqd_t msg_queue;
+    uint32_t sim_flags;
+    uint8_t id;
+    uint8_t mac[6];
 } SIM_STATE_t;
 
 extern SIM_STATE_t SIM_STATE;

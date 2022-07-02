@@ -54,7 +54,7 @@ uint8_t p_gpio_addr_d(void) {
 }
 #elif defined(__linux__) || defined(__MINGW64__)
 uint8_t p_gpio_addr_d(void) {
-    return SIM_STATE.addr_d;
+    return SIM_STATE.id;
 }
 #endif
 

@@ -13,6 +13,8 @@
 #endif
 #include "cmds.h"
 
-void ag_communicate(void);
+void ag_comm_init(void);
+
+void ag_comm_main(void);
 
 #endif /* AGATHIS_COMM_ZC5DS878HG83B98T */

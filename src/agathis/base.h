@@ -64,6 +64,8 @@ void ag_reset(void);
 
 void ag_init(void);
 
+void ag_get_MAC(uint8_t *mac);
+
 float ag_get_I5_NOM(void);
 
 float ag_get_I3_NOM(void);

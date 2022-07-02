@@ -1,6 +1,6 @@
 cmake_minimum_required (VERSION 3.0)
 project (pinus-flexilis LANGUAGES C)
-set(CMAKE_VERBOSE_MAKEFILE ON)
+#set(CMAKE_VERBOSE_MAKEFILE ON)
 
 add_compile_options("-Os" "-Wall" "-Wextra" "-Wpedantic"
         "-Wformat=2" "-Wformat-truncation" "-Wformat-overflow"
@@ -25,6 +25,7 @@ add_library(agathis STATIC
         ${CMAKE_CURRENT_SOURCE_DIR}/src/agathis/base.c
         ${CMAKE_CURRENT_SOURCE_DIR}/src/agathis/comm.c
 )
+#target_link_libraries(agathis nng)
 
 add_executable(${PROJECT_NAME}
         ${CMAKE_CURRENT_SOURCE_DIR}/src/sim/state.c

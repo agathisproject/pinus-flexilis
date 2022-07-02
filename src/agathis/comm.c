@@ -10,154 +10,135 @@
 #elif defined(__XC16__)
 #include "../hw/gpio.h"
 #include "../platform.h"
-#elif defined(__linux__) || defined(__MINGW64__)
+#elif defined(__linux__)
+#include <dirent.h>
 #include <fcntl.h>
+#include <mqueue.h>
+#include <signal.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include <unistd.h>
-#include "sys/stat.h"
-#include "sys/types.h"
+
+#include "../sim/state.h"
 #endif
 #include "config.h"
 #include "base.h"
 
 #if defined(__AVR__)
-void ag_receive(void) {
-
-}
-#elif defined(__XC16__)
-void ag_receive(void) {
-
-}
-#elif defined(__linux__) || defined(__MINGW64__)
 void ag_rx_cback(void) {
-    char f_path[32] = "";
-    struct stat s;
-    int fd;
-    unsigned int nb;
-    uint8_t buff[8];
 
-    snprintf(f_path, 32, "run/slot_%d", MOD_STATE.addr_d);
-    if (stat(f_path, &s) == -1) {
-        return;
-    }
-    if ((s.st_mode & S_IFMT) != S_IFIFO) {
-        return;
-    }
+}
+#elif defined(__XC16__)
+void ag_rx_cback(void) {
 
-    fd = open(f_path, O_RDONLY);
-    if (fd == -1) {
-        perror("CANNOT open pipe\n");
-        return;
-    }
-    nb = (unsigned int) read(fd, buff, 8);
-    close(fd);
-    if (nb != 1) {
-        printf("UNEXPECTED RX: %d byte(s)\n", nb);
-        return;
-    }
+}
+#elif defined(__linux__)
+static void p_mq_notify(void);
 
-    nb = 0;
-    switch (buff[0]) {
-        case 1: {
-            nb = AG_CMD_SUMMARY_NB;
-            buff[0] = AG_CMD_SUMMARY_NB;
-            buff[1] = MOD_STATE.caps_ext;
-            buff[2] = 0x0;
-            buff[3] = 0x0;
-            break;
-        }
-        default: {
-            printf("UNRECOGNIZED cmd %#04x\n", buff[0]);
-            break;
-        }
+static void ag_rx_cback(union sigval sv) {
+    mqd_t mq_des = *((mqd_t *) sv.sival_ptr);
+    struct mq_attr attr;
+    void *buf;
+    ssize_t nb_rx;
+
+    /* Determine max. msg size; allocate buffer to receive msg */
+    if (mq_getattr(mq_des, &attr) == -1) {
+        perror("CANNOT get mq attr");
+        return;
+    }
+    buf = malloc((size_t) attr.mq_msgsize);
+    if (buf == NULL) {
+        printf("CANNOT allocate RX buffer\n");
+        return;
     }
 
-    fd = open(f_path, O_WRONLY);
-    if (fd == -1) {
-        perror("CANNOT open pipe\n");
+    nb_rx = mq_receive(mq_des, buf, (size_t) attr.mq_msgsize, NULL);
+    if (nb_rx == -1) {
+        perror("RX failure");
+        free(buf);
         return;
     }
-    write(fd, buff, (size_t) nb);
-    close(fd);
+    printf("DBG RX@%d %zd bytes\n", SIM_STATE.id, nb_rx);
+    free(buf);
+    p_mq_notify();
+}
+
+static void p_mq_notify(void) {
+    struct sigevent sev;
+
+    sev.sigev_notify = SIGEV_THREAD;
+    sev.sigev_notify_function = ag_rx_cback;
+    sev.sigev_notify_attributes = NULL;
+    sev.sigev_value.sival_ptr = &(SIM_STATE.msg_queue);
+    if (mq_notify(SIM_STATE.msg_queue, &sev) == -1) {
+        perror("mq_notify");
+        exit(EXIT_FAILURE);
+    }
 }
 #endif
 
-int ag_smbus_block_rd(uint8_t addr, uint8_t cmd, uint8_t *buff, uint8_t nb) {
-    char f_path[32] = "";
-    struct stat s;
-    int fd;
-    unsigned int nb_rcv = 0;
+int ag_tx(int mc_id, uint8_t *buff, uint8_t nb) {
+#if defined(__linux__)
+    char mq_name[32] = "";
+    char dst_name[32] = "";
 
-    snprintf(f_path, 32, "run/slot_%d", (addr - I2C_OFFSET));
-    if (stat(f_path, &s) == -1) {
-        return -1;
+    snprintf(mq_name, 32, "%s%03d", SIM_MQ_PREFIX, SIM_STATE.id);
+
+    DIR *d = opendir("/dev/mqueue");
+    if (d == NULL) {
+        printf("%s\n", "CANNOT open folder");
+        exit(EXIT_FAILURE);
     }
-    if ((s.st_mode & S_IFMT) != S_IFIFO) {
-        return -1;
+
+    struct dirent *dir;
+    while ((dir = readdir(d)) != NULL) {
+        size_t tmp_len = strlen(SIM_MQ_PREFIX);
+        if (strncmp(SIM_MQ_PREFIX, dir->d_name, tmp_len) != 0) {
+            continue;
+        }
+        if (strncmp(mq_name, dir->d_name, 32) == 0) {
+            continue;
+        }
+
+        dst_name[0] = '/';
+        dst_name[1] = '\0';
+        strcat(dst_name, dir->d_name);
+        mqd_t queue = mq_open(dst_name, O_WRONLY);
+        if (queue == -1) {
+            perror("CANNOT create mq");
+            continue;
+        }
+        printf("TX to %s\n", dst_name);
+        if (mq_send (queue, "hello", 6, 0) == -1) {
+            perror ("CANNOT send msg");
+            continue;
+        }
+
+        mq_close(queue);
     }
-
-    fd = open(f_path, O_WRONLY);
-    if (fd == -1) {
-        return -1;
-    }
-    write(fd, &cmd, 1);
-    close(fd);
-
-    usleep(10 * 1000);
-
-    fd = open(f_path, O_RDONLY);
-    if (fd == -1) {
-        return -1;
-    }
-    nb_rcv = (unsigned int) read(fd, buff, nb);
-    close(fd);
-
-    //printf("DBG: reply %d bytes(s)\n", nb_rcv);
-    //printf("DBG: %x %x %x %x\n", buff[0], buff[1], buff[2], buff[3]);
-    usleep(90 * 1000);
+    closedir(d);
     return 0;
+#endif
 }
 
+void ag_comm_init(void) {
+#if defined(__linux)
+    p_mq_notify();
+#endif
+}
+
+void ag_comm_main(void) {
 #if defined(__AVR__)
-void ag_cmd_summary(uint8_t mod_id, uint8_t *data) {
 
-}
 #elif defined(__XC16__)
-void ag_cmd_summary(uint8_t mod_id, uint8_t *data) {
 
-}
-#elif defined(__linux__) || defined(__MINGW64__)
-void ag_cmd_summary(uint8_t mod_id, uint8_t *data) {
-    int sts = -1;
-    uint8_t buff[AG_CMD_SUMMARY_NB];
-
-    sts = ag_smbus_block_rd((mod_id + I2C_OFFSET), AG_CMD_SUMMARY, buff,
-                            AG_CMD_SUMMARY_NB);
-    if (sts < 0) {
-        REMOTE_MODS[mod_id].state = MC_NOT_PRESENT;
-    } else {
-        REMOTE_MODS[mod_id].state = MC_PRESENT;
+#elif defined(__linux__)
+    time_t ts_now = time(NULL);
+    if ((ts_now % 5) == 0) {
+        ag_tx(-1, (uint8_t *) "hello", 5);
     }
-}
+
+    sleep(1);
 #endif
-
-#if defined(__AVR__)
-void ag_communicate(void) {
-
 }
-#elif defined(__XC16__)
-void ag_communicate(void) {
-
-}
-#elif defined(__linux__) || defined(__MINGW64__)
-void ag_communicate(void) {
-    if (MOD_STATE.caps_ext & AG_CAP_EXT_TMC) {
-        for (uint8_t i = 1; i < MC_MAX_CNT; i++) {
-            ag_cmd_summary(i, NULL);
-        }
-    } else {
-        ag_rx_cback();
-    };
-}
-#endif
