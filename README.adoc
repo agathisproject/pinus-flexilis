@@ -1,0 +1,26 @@
+= pinus-flexilis
+
+CLI simulator for Agathis Management Controller.
+
+== Build
+
+[source,bash]
+----
+mkdir build
+cd build
+cmake ..
+make
+----
+
+== Usage
+
+[source,bash]
+----
+./pinus-flexilis
+----
+
+To exit CTRL+C
+
+== Links
+
+* https://github.com/agathisproject/pinus-flexilis/blob/docs/docs/CLI.adoc[CLI specification]
