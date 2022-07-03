@@ -14,12 +14,8 @@ CLI_CMD_RETURN_t cmd_info(CLI_PARSED_CMD_t *cmdp) {
         return CMD_WRONG_N;
     }
 
-    if (MOD_STATE.caps_ext & AG_CAP_EXT_TMC) {
-        printf("MC_TYPE = TMC\n");
-    } else {
-        printf("MC_TYPE = MMC\n");
-    }
-    printf("MC_ADDR = %d\n", MOD_STATE.addr_d);
+    printf("caps = %#04x/%#04x/%#04x\n", MOD_STATE.caps_hw_ext,
+           MOD_STATE.caps_hw_int, MOD_STATE.caps_sw);
     printf("MFR_NAME = %s\n", MOD_STATE.mfr_name);
     printf("MFR_PN = %s\n", MOD_STATE.mfr_pn);
     printf("MFR_SN = %s\n", MOD_STATE.mfr_sn);
@@ -41,26 +37,26 @@ CLI_CMD_RETURN_t cmd_mod_info(CLI_PARSED_CMD_t *cmdp) {
         return CMD_WRONG_N;
     }
 
-    if (!(MOD_STATE.caps_ext & AG_CAP_EXT_TMC)) {
+    if (!(MOD_STATE.caps_hw_ext & AG_CAP_EXT_TMC)) {
         return CMD_DONE;
     }
 
     for (int i = 1; i < MC_MAX_CNT; i ++) {
         printf("  @%02d: ", i);
-        switch (REMOTE_MODS[i - 1].state) {
-            case MC_NOT_PRESENT: {
-                printf("no");
-                break;
-            }
-            case MC_PRESENT: {
-                printf("yes");
-                break;
-            }
-            case MC_INVALID: {
-                printf("???");
-                break;
-            }
-        }
+//        switch (REMOTE_MODS[i - 1].state) {
+//            case MC_NOT_PRESENT: {
+//                printf("no");
+//                break;
+//            }
+//            case MC_PRESENT: {
+//                printf("yes");
+//                break;
+//            }
+//            case MC_INVALID: {
+//                printf("???");
+//                break;
+//            }
+//        }
         printf("\n");
     }
     return CMD_DONE;

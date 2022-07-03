@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <sys/stat.h>
 #include <time.h>
 #include <unistd.h>
 
@@ -37,6 +38,7 @@ static void p_test_eeprom(void) {
         fclose(fp);
         printf("created new '%s'\n", f_path);
     }
+    printf("EEPROM file: '%s'\n", SIM_STATE.eeprom_path);
 }
 
 static void p_test_config(void) {
@@ -50,10 +52,11 @@ static void p_test_config(void) {
             exit(EXIT_FAILURE);
         }
         fprintf(fp, "[default]\n");
-        fprintf(fp, "id = 0x0\n");
+        fprintf(fp, "id = %d\n", SIM_STATE.id);
         fclose(fp);
         printf("created new '%s'\n", f_path);
     }
+    printf("config file: '%s'\n", SIM_STATE.config_path);
 }
 
 //typedef struct {
@@ -115,8 +118,7 @@ static void p_guess_id(void) {
         printf("%s - line %d\n", __func__, __LINE__);
         exit(EXIT_FAILURE);
     }
-    printf("sim id = %d\n", SIM_STATE.id);
-    SIM_STATE.mac[0] = SIM_STATE.id;
+    //printf("DBG sim id = %d\n", SIM_STATE.id);
 }
 
 void p_start_IPC(void) {
@@ -132,9 +134,6 @@ void p_start_IPC(void) {
 }
 
 void sim_init(int argc, char *argv[]) {
-    strncpy(SIM_STATE.eeprom_path, "EEPROM.BIN", SIM_PATH_LEN);
-    strncpy(SIM_STATE.config_path, "config.ini", SIM_PATH_LEN);
-
     int opt = 0;
 
     while ((opt = getopt (argc, argv, "he:c:b")) != -1) {
@@ -148,11 +147,11 @@ void sim_init(int argc, char *argv[]) {
                         strncpy(SIM_STATE.eeprom_path, optarg, SIM_PATH_LEN);
                     } else {
                         printf("INCORRECT file name: '%s', using default\n", optarg);
-                        strncpy(SIM_STATE.eeprom_path, "EEPROM.BIN", SIM_PATH_LEN);
+                        strncpy(SIM_STATE.eeprom_path, "cfg/EEPROM.BIN", SIM_PATH_LEN);
                     }
                 } else {
                     printf("INCORRECT file name: '%s', using default\n", optarg);
-                    strncpy(SIM_STATE.eeprom_path, "EEPROM.BIN", SIM_PATH_LEN);
+                    strncpy(SIM_STATE.eeprom_path, "cfg/EEPROM.BIN", SIM_PATH_LEN);
                 }
                 break;
             case 'c':
@@ -161,11 +160,11 @@ void sim_init(int argc, char *argv[]) {
                         strncpy(SIM_STATE.config_path, optarg, SIM_PATH_LEN);
                     } else {
                         printf("INCORRECT file name: '%s', using default\n", optarg);
-                        strncpy(SIM_STATE.config_path, "config.ini", SIM_PATH_LEN);
+                        strncpy(SIM_STATE.config_path, "cfg/config.ini", SIM_PATH_LEN);
                     }
                 } else {
                     printf("INCORRECT file name: '%s', using default\n", optarg);
-                    strncpy(SIM_STATE.config_path, "config.ini", SIM_PATH_LEN);
+                    strncpy(SIM_STATE.config_path, "cfg/config.ini", SIM_PATH_LEN);
                 }
                 break;
             case 'b':
@@ -175,12 +174,27 @@ void sim_init(int argc, char *argv[]) {
                 break;
         }
     }
+
     p_guess_id();
+    SIM_STATE.mac[0] = SIM_STATE.id;
+
+    if (access("cfg", (R_OK | W_OK | X_OK)) != 0) {
+        if (mkdir("cfg", 0775) == -1) {
+            perror("CANNOT create folder");
+            exit(EXIT_FAILURE);
+        }
+    }
+
+    char f_path[SIM_PATH_LEN] = "";
+
+    snprintf(f_path, SIM_PATH_LEN, "cfg/EEPROM_%03d.BIN", SIM_STATE.id);
+    strncpy(SIM_STATE.eeprom_path, f_path, SIM_PATH_LEN);
+    snprintf(f_path, SIM_PATH_LEN, "cfg/config_%03d.ini", SIM_STATE.id);
+    strncpy(SIM_STATE.config_path, f_path, SIM_PATH_LEN);
+
     p_test_eeprom();
     p_test_config();
     p_load_config();
-    printf("EEPROM file: '%s'\n", SIM_STATE.eeprom_path);
-    printf("config file: '%s'\n", SIM_STATE.config_path);
 
     p_start_IPC();
 

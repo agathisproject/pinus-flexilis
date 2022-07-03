@@ -7,7 +7,7 @@
 #include <mqueue.h>
 #include <stdint.h>
 
-#define SIM_PATH_LEN 64
+#define SIM_PATH_LEN 32
 #define SIM_MQ_PREFIX "agathis_"
 
 #define SIM_FLAG_NO_CONSOLE 0x00000001
