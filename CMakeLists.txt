@@ -34,6 +34,6 @@ add_executable(${PROJECT_NAME}
         ${CMAKE_CURRENT_SOURCE_DIR}/src/main.c
 )
 target_link_libraries(${PROJECT_NAME}
-        pthread
+        pthread rt
         ini cli agathis
 )
