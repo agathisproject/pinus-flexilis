@@ -10,8 +10,9 @@
 #elif defined(__XC16__)
 #include "../hw/gpio.h"
 #include "../platform.h"
-#elif defined(__linux__) || defined(__MINGW64__)
+#elif defined(__linux__)
 #include <stdlib.h>
+
 #include "../sim/state.h"
 #include "../sim/misc.h"
 #endif
@@ -52,7 +53,7 @@ uint8_t p_gpio_addr_d(void) {
                              gpio_get(PIN_D_ADDR0));
     return res;
 }
-#elif defined(__linux__) || defined(__MINGW64__)
+#elif defined(__linux__)
 uint8_t p_gpio_addr_d(void) {
     return SIM_STATE.id;
 }
@@ -64,18 +65,18 @@ void p_gpio_addr_u(uint8_t addr) {
     gpio_set(PIN_U_ADDR1, ((addr >> 1) & 0x01));
     gpio_set(PIN_U_ADDR2, ((addr >> 2) & 0x01));
 }
-#elif defined(__linux__) || defined(__MINGW64__)
+#elif defined(__linux__)
 void p_gpio_addr_u(uint8_t addr) {
 
 }
 #endif
 
-#if defined(__AVR__) || defined(__XC16__)
-uint8_t p_get_eeprom_byte(uint16_t addr) {
+static uint8_t p_get_eeprom_byte(uint16_t addr) {
+#if defined(__AVR__)
     return 0xFF;
-}
-#elif defined(__linux__) || defined(__MINGW64__)
-uint8_t p_get_eeprom_byte(uint16_t addr) {
+#elif defined(__XC16__)
+    return 0xFF;
+#elif defined(__linux__)
     const char *fName = SIM_STATE.eeprom_path;
     FILE *fp;
 
@@ -90,15 +91,15 @@ uint8_t p_get_eeprom_byte(uint16_t addr) {
     fclose(fp);
 
     return tmp;
-}
 #endif
-
-#if defined(__AVR__) || defined(__XC16__)
-void p_get_eeprom_str(uint16_t addr, uint8_t len, char *str) {
-
 }
-#elif defined(__linux__) || defined(__MINGW64__)
-void p_get_eeprom_str(uint16_t addr, uint8_t len, char *str) {
+
+static void p_get_eeprom_str(uint16_t addr, uint8_t len, char *str) {
+#if defined(__AVR__)
+    memset(str, 0, len * sizeof(char) );
+#elif defined(__XC16__)
+    memset(str, 0, len * sizeof(char) );
+#elif defined(__linux__)
     const char *fName = SIM_STATE.eeprom_path;
     FILE *fp;
 
@@ -115,8 +116,8 @@ void p_get_eeprom_str(uint16_t addr, uint8_t len, char *str) {
     str[len] = '\0';
 
     fclose(fp);
-}
 #endif
+}
 
 /**
  * read floating point value from EEPROM
@@ -127,12 +128,12 @@ void p_get_eeprom_str(uint16_t addr, uint8_t len, char *str) {
  * @param f
  * @return
  */
-#if defined(__AVR__) || defined(__XC16__)
-float p_get_eeprom_float(uint16_t addr) {
+static float p_get_eeprom_float(uint16_t addr) {
+#if defined(__AVR__)
     return 0.0;
-}
-#elif defined(__linux__) || defined(__MINGW64__)
-float p_get_eeprom_float(uint16_t addr) {
+#elif defined(__XC16__)
+    return 0.0;
+#elif defined(__linux__)
     const char *fName = SIM_STATE.eeprom_path;
     FILE *fp;
 
@@ -150,8 +151,8 @@ float p_get_eeprom_float(uint16_t addr) {
 
     fclose(fp);
     return ((float) tmp / 100.0f);
-}
 #endif
+}
 
 void p_restore_state(void) {
     uint8_t ver = p_get_eeprom_byte(0);
@@ -170,16 +171,14 @@ void p_restore_state(void) {
     MOD_STATE.i3_cutoff = p_get_eeprom_float(70);
 }
 
-#if defined(__AVR__)
 void ag_reset(void) {
+#if defined(__AVR__)
     printf("reset\n");
     wdt_enable(WDTO_15MS);
-}
 #elif defined(__XC16__)
-void ag_reset(void) {
 
-}
 #endif
+}
 
 void ag_init(void) {
 #if MOD_HAS_EEPROM
@@ -230,30 +229,28 @@ void ag_init(void) {
     MOD_STATE.last_err = 0;
 }
 
-#if defined(__AVR__)
-float ag_get_I5_NOM(void) {
-    return 0.0f;
+void ag_get_MAC(uint8_t *mac) {
+    for (int i = 0; i < 6; i++) {
+        mac[i] = SIM_STATE.mac[i];
+    }
 }
-#elif defined(__XC16__)
-float ag_get_I5_NOM(void) {
-    return 0.0f;
-}
-#else
-float ag_get_I5_NOM(void) {
-    return getValue_random((MOD_STATE.i5_nom * 0.7f), 5);
-}
-#endif
 
+float ag_get_I5_NOM(void) {
 #if defined(__AVR__)
-float ag_get_I3_NOM(void) {
     return 0.0f;
-}
 #elif defined(__XC16__)
-float ag_get_I3_NOM(void) {
     return 0.0f;
-}
 #else
-float ag_get_I3_NOM(void) {
-    return getValue_random((MOD_STATE.i3_nom * 0.5f), 5);
-}
+    return getValue_random((MOD_STATE.i5_nom * 0.7f), 5);
 #endif
+}
+
+float ag_get_I3_NOM(void) {
+#if defined(__AVR__)
+    return 0.0f;
+#elif defined(__XC16__)
+    return 0.0f;
+#else
+    return getValue_random((MOD_STATE.i3_nom * 0.5f), 5);
+#endif
+}

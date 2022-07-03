@@ -116,7 +116,7 @@ static void p_guess_id(void) {
         exit(EXIT_FAILURE);
     }
     printf("sim id = %d\n", SIM_STATE.id);
-    SIM_STATE.mac[5] = SIM_STATE.id;
+    SIM_STATE.mac[0] = SIM_STATE.id;
 }
 
 void p_start_IPC(void) {

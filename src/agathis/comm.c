@@ -39,28 +39,51 @@ static void p_mq_notify(void);
 static void ag_rx_cback(union sigval sv) {
     mqd_t mq_des = *((mqd_t *) sv.sival_ptr);
     struct mq_attr attr;
-    void *buf;
-    ssize_t nb_rx;
 
     /* Determine max. msg size; allocate buffer to receive msg */
     if (mq_getattr(mq_des, &attr) == -1) {
         perror("CANNOT get mq attr");
         return;
     }
-    buf = malloc((size_t) attr.mq_msgsize);
-    if (buf == NULL) {
+
+    uint8_t *buff;
+
+    buff = (uint8_t *) malloc((size_t) attr.mq_msgsize);
+    if (buff == NULL) {
         printf("CANNOT allocate RX buffer\n");
         return;
     }
 
-    nb_rx = mq_receive(mq_des, buf, (size_t) attr.mq_msgsize, NULL);
+    ssize_t nb_rx = mq_receive(mq_des, (char *) buff, (size_t) attr.mq_msgsize,
+                               NULL);
     if (nb_rx == -1) {
         perror("RX failure");
-        free(buf);
+        free(buff);
         return;
     }
-    printf("DBG RX@%d %zd bytes\n", SIM_STATE.id, nb_rx);
-    free(buf);
+    //printf("DBG RX@%d %zd bytes\n", SIM_STATE.id, nb_rx);
+    if (nb_rx == 64) {
+        uint32_t mac_dst[2];
+        uint32_t mac_src[2];
+        uint8_t mac[6];
+        uint32_t mac_lcl[2];
+
+        ag_get_MAC(mac);
+        mac_dst[1] = ((uint32_t) buff[5] << 16) | ((uint32_t) buff[4] << 8) | buff[3];
+        mac_dst[0] = ((uint32_t) buff[2] << 16) | ((uint32_t) buff[1] << 8) | buff[0];
+        mac_src[1] = ((uint32_t) buff[11] << 16) | ((uint32_t) buff[10] << 8) | buff[9];
+        mac_src[0] = ((uint32_t) buff[8] << 16) | ((uint32_t) buff[7] << 8) | buff[6];
+        mac_lcl[1] = ((uint32_t) mac[5] << 16) | ((uint32_t) mac[4] << 8) | mac[3];
+        mac_lcl[0] = ((uint32_t) mac[2] << 16) | ((uint32_t) mac[1] << 8) | mac[0];
+        if ((mac_dst[1] == 0xFFFFFF) && (mac_dst[0] == 0xFFFFFF)) {
+            printf("DBG RX@%d brcst from %06x:%06x\n", SIM_STATE.id, mac_src[1],
+                   mac_src[0]);
+        }
+        if ((mac_dst[1] == mac_lcl[1]) && (mac_dst[0] == mac_lcl[0])) {
+            printf("DBG RX@%d msg from %06x:%06x\n", SIM_STATE.id, mac_src[1], mac_src[0]);
+        }
+    }
+    free(buff);
     p_mq_notify();
 }
 
@@ -78,7 +101,7 @@ static void p_mq_notify(void) {
 }
 #endif
 
-int ag_tx(int mc_id, uint8_t *buff, uint8_t nb) {
+int ag_tx(uint8_t *buff, uint8_t nb) {
 #if defined(__linux__)
     char mq_name[32] = "";
     char dst_name[32] = "";
@@ -109,9 +132,9 @@ int ag_tx(int mc_id, uint8_t *buff, uint8_t nb) {
             perror("CANNOT create mq");
             continue;
         }
-        printf("TX to %s\n", dst_name);
-        if (mq_send (queue, "hello", 6, 0) == -1) {
-            perror ("CANNOT send msg");
+        printf("DBG TX@%d to %s\n", SIM_STATE.id, dst_name);
+        if (mq_send(queue, (const char *) buff, nb, 0) == -1) {
+            perror("CANNOT send msg");
             continue;
         }
 
@@ -135,8 +158,19 @@ void ag_comm_main(void) {
 
 #elif defined(__linux__)
     time_t ts_now = time(NULL);
+    uint8_t buff[64];
+    uint8_t mac[6];
+
     if ((ts_now % 5) == 0) {
-        ag_tx(-1, (uint8_t *) "hello", 5);
+        memset(buff, 0, 64 * sizeof (uint8_t));
+        ag_get_MAC(mac);
+        for (int i = 0; i < 6; i++) {
+            buff[i] = 0xFF;
+        }
+        for (int i = 0; i < 6; i++) {
+            buff[i + 6] = mac[i];
+        }
+        ag_tx(buff, 64);
     }
 
     sleep(1);

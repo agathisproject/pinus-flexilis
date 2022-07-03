@@ -23,8 +23,8 @@ void sigint_handler(int dummy) {
 static void p_CLI_init_prompt(void) {
     char prompt[12];
 
-    snprintf(prompt, 12, "%02x:%02x:%02x-> ", SIM_STATE.mac[3], SIM_STATE.mac[4],
-             SIM_STATE.mac[5]);
+    snprintf(prompt, 12, "%02x:%02x:%02x-> ", SIM_STATE.mac[2], SIM_STATE.mac[1],
+             SIM_STATE.mac[0]);
     printf("press ? for help\n");
     CLI_setPrompt(prompt);
 }
