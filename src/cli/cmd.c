@@ -37,27 +37,12 @@ CLI_CMD_RETURN_t cmd_mod_info(CLI_PARSED_CMD_t *cmdp) {
         return CMD_WRONG_N;
     }
 
-    if (!(MOD_STATE.caps_hw_ext & AG_CAP_EXT_TMC)) {
-        return CMD_DONE;
-    }
-
-    for (int i = 1; i < MC_MAX_CNT; i ++) {
-        printf("  @%02d: ", i);
-//        switch (REMOTE_MODS[i - 1].state) {
-//            case MC_NOT_PRESENT: {
-//                printf("no");
-//                break;
-//            }
-//            case MC_PRESENT: {
-//                printf("yes");
-//                break;
-//            }
-//            case MC_INVALID: {
-//                printf("???");
-//                break;
-//            }
-//        }
-        printf("\n");
+    for (int i = 0; i < MC_MAX_CNT; i ++) {
+        if (REMOTE_MODS[i].last_seen == -1) {
+            continue;
+        }
+        printf("%06x:%06x (%d)\n", REMOTE_MODS[i].mac[1], REMOTE_MODS[i].mac[0],
+               REMOTE_MODS[i].last_seen);
     }
     return CMD_DONE;
 }

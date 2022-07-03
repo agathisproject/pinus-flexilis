@@ -65,8 +65,8 @@ static void ag_rx_cback(union sigval sv) {
     if (nb_rx == 64) {
         uint32_t mac_dst[2];
         uint32_t mac_src[2];
-        uint8_t mac[6];
         uint32_t mac_lcl[2];
+        uint8_t mac[6];
 
         ag_get_MAC(mac);
         mac_dst[1] = ((uint32_t) buff[5] << 16) | ((uint32_t) buff[4] << 8) | buff[3];
@@ -76,8 +76,8 @@ static void ag_rx_cback(union sigval sv) {
         mac_lcl[1] = ((uint32_t) mac[5] << 16) | ((uint32_t) mac[4] << 8) | mac[3];
         mac_lcl[0] = ((uint32_t) mac[2] << 16) | ((uint32_t) mac[1] << 8) | mac[0];
         if ((mac_dst[1] == 0xFFFFFF) && (mac_dst[0] == 0xFFFFFF)) {
-            printf("DBG RX@%d brcst from %06x:%06x\n", SIM_STATE.id, mac_src[1],
-                   mac_src[0]);
+            //printf("DBG RX@%d brcst from %06x:%06x\n", SIM_STATE.id, mac_src[1], mac_src[0]);
+            ag_add_remote_mod(mac_src, buff[12]);
         }
         if ((mac_dst[1] == mac_lcl[1]) && (mac_dst[0] == mac_lcl[0])) {
             printf("DBG RX@%d msg from %06x:%06x\n", SIM_STATE.id, mac_src[1], mac_src[0]);
@@ -132,7 +132,7 @@ int ag_tx(uint8_t *buff, uint8_t nb) {
             perror("CANNOT create mq");
             continue;
         }
-        printf("DBG TX@%d to %s\n", SIM_STATE.id, dst_name);
+        //printf("DBG TX@%d to %s\n", SIM_STATE.id, dst_name);
         if (mq_send(queue, (const char *) buff, nb, 0) == -1) {
             perror("CANNOT send msg");
             continue;
@@ -174,5 +174,6 @@ void ag_comm_main(void) {
     }
 
     sleep(1);
+    ag_upd_remote_mods();
 #endif
 }

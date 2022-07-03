@@ -40,19 +40,20 @@ extern AG_MC_STATE_t MOD_STATE;
  * @brief info about the other MCs (Management Controllers)
  */
 typedef struct {
-    uint8_t mac[6];
+    uint32_t mac[2];
     uint8_t caps;
     uint8_t last_err;
+    int8_t last_seen;
 } AG_RMT_MC_STATE_t;
 
 #define MC_MAX_CNT 16 /** max number of MCs in the chain, including the local one */
+#define MC_MAX_AGE 30
 
-typedef struct {
-    AG_RMT_MC_STATE_t *state;
-    AG_RMT_MC_STATE_t *next;
-} AG_RMT_MC_NODE_t;
+extern AG_RMT_MC_STATE_t REMOTE_MODS[MC_MAX_CNT];
 
-extern AG_RMT_MC_NODE_t *REMOTE_MODS;
+void ag_add_remote_mod(const uint32_t *mac, uint8_t caps);
+
+void ag_upd_remote_mods(void);
 
 #if defined(__XC16__)
 extern SemaphoreHandle_t xSemaphore_MMC;

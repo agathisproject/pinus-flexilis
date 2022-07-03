@@ -24,7 +24,24 @@ AG_MC_STATE_t MOD_STATE = {.caps_hw_ext = 0, .caps_hw_int = 0, .caps_sw = 0,
                            .i5_nom = 0.1f,  .i5_cutoff = 0.12f, .i3_nom = 1.0f, .i3_cutoff = 1.5f,
                           };
 
-AG_RMT_MC_NODE_t *REMOTE_MODS = NULL;
+AG_RMT_MC_STATE_t REMOTE_MODS[MC_MAX_CNT] = {
+    {.mac = {0, 0}, .caps = 0, .last_err = 0, .last_seen = -1},
+    {.mac = {0, 0}, .caps = 0, .last_err = 0, .last_seen = -1},
+    {.mac = {0, 0}, .caps = 0, .last_err = 0, .last_seen = -1},
+    {.mac = {0, 0}, .caps = 0, .last_err = 0, .last_seen = -1},
+    {.mac = {0, 0}, .caps = 0, .last_err = 0, .last_seen = -1},
+    {.mac = {0, 0}, .caps = 0, .last_err = 0, .last_seen = -1},
+    {.mac = {0, 0}, .caps = 0, .last_err = 0, .last_seen = -1},
+    {.mac = {0, 0}, .caps = 0, .last_err = 0, .last_seen = -1},
+    {.mac = {0, 0}, .caps = 0, .last_err = 0, .last_seen = -1},
+    {.mac = {0, 0}, .caps = 0, .last_err = 0, .last_seen = -1},
+    {.mac = {0, 0}, .caps = 0, .last_err = 0, .last_seen = -1},
+    {.mac = {0, 0}, .caps = 0, .last_err = 0, .last_seen = -1},
+    {.mac = {0, 0}, .caps = 0, .last_err = 0, .last_seen = -1},
+    {.mac = {0, 0}, .caps = 0, .last_err = 0, .last_seen = -1},
+    {.mac = {0, 0}, .caps = 0, .last_err = 0, .last_seen = -1},
+    {.mac = {0, 0}, .caps = 0, .last_err = 0, .last_seen = -1},
+};
 
 #if defined(__XC16__)
 SemaphoreHandle_t xSemaphore_MMC = NULL;
@@ -153,6 +170,46 @@ void p_restore_state(void) {
     MOD_STATE.i5_cutoff = p_get_eeprom_float(66);
     MOD_STATE.i3_nom = p_get_eeprom_float(68);
     MOD_STATE.i3_cutoff = p_get_eeprom_float(70);
+}
+
+void ag_add_remote_mod(const uint32_t *mac, uint8_t caps) {
+    int idx_free = -1;
+    for (int i = 0 ; i < MC_MAX_CNT; i ++) {
+        if ((REMOTE_MODS[i].last_seen == -1) && (idx_free == -1)) {
+            idx_free = i;
+        }
+        if ((REMOTE_MODS[i].mac[0] == mac[0]) && (REMOTE_MODS[i].mac[1] == mac[1])) {
+            REMOTE_MODS[i].caps = caps;
+            REMOTE_MODS[i].last_seen = 0;
+            return;
+        }
+    }
+
+    if (idx_free >= 0) {
+        REMOTE_MODS[idx_free].mac[0] = mac[0];
+        REMOTE_MODS[idx_free].mac[1] = mac[1];
+        REMOTE_MODS[idx_free].caps = caps;
+        REMOTE_MODS[idx_free].last_seen = 0;
+    } else {
+        printf("CANNOT add MC - too many\n");
+    }
+}
+
+void ag_upd_remote_mods(void) {
+    for (int i = 0 ; i < MC_MAX_CNT; i ++) {
+        if (REMOTE_MODS[i].last_seen == -1) {
+            continue;
+        }
+        if (REMOTE_MODS[i].last_seen > MC_MAX_AGE) {
+            REMOTE_MODS[i].mac[0] = 0;
+            REMOTE_MODS[i].mac[1] = 0;
+            REMOTE_MODS[i].caps = 0;
+            REMOTE_MODS[i].last_err = 0;
+            REMOTE_MODS[i].last_seen = -1;
+        } else {
+            REMOTE_MODS[i].last_seen += 1;
+        }
+    }
 }
 
 void ag_reset(void) {
