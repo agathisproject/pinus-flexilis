@@ -25,7 +25,7 @@ typedef enum {
 #define AG_CAP_EXT_1PPS      0x08
 #define AG_CAP_EXT_CLK       0x04
 #define AG_CAP_EXT_PWR       0x02
-#define AG_CAP_EXT_TMC       0x01
+#define AG_CAP_SW_TMC        0x01
 
 #define AG_CMD_MFR          0xFE
 #define AG_CMD_MFR_NB       4

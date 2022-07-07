@@ -5,13 +5,13 @@
 /** @file */
 
 #include <stdint.h>
+
 #if defined(__XC16__)
 #include <FreeRTOS.h>
 #include <task.h>
 #include <semphr.h>
 #include <queue.h>
 #endif
-#include "cmds.h"
 
 #define PREFIX_MC "[ MC]"
 #define I2C_OFFSET 0x20
@@ -62,10 +62,6 @@ extern SemaphoreHandle_t xSemaphore_MMC;
 void ag_reset(void);
 
 void ag_init(void);
-
-void ag_get_MAC(uint8_t *mac);
-
-void ag_get_MAC_compact(uint32_t *mac);
 
 float ag_get_I5_NOM(void);
 

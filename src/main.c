@@ -7,11 +7,12 @@
 #include <pthread.h>
 #include <unistd.h>
 
-#include "sim/state.h"
-#include "sim/top.h"
-#include "cli/cli.h"
 #include "agathis/base.h"
 #include "agathis/comm.h"
+#include "cli/cli.h"
+#include "hw/storage.h"
+#include "sim/state.h"
+#include "sim/top.h"
 
 static pthread_t pt_id1, pt_id2;
 
@@ -24,7 +25,7 @@ static void p_CLI_init_prompt(void) {
     char prompt[CLI_PROMPT_SIZE];
     uint32_t mac[2];
 
-    ag_get_MAC_compact(mac);
+    stor_get_MAC_compact(mac);
     snprintf(prompt, CLI_PROMPT_SIZE, "[%06x:%06x]$ ", mac[1], mac[0]);
     printf("press ? for help\n");
     CLI_setPrompt(prompt);

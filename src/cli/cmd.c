@@ -6,8 +6,10 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "../agathis/config.h"
 #include "../agathis/base.h"
+#include "../agathis/cmds.h"
+#include "../agathis/config.h"
+#include "../hw/storage.h"
 
 CLI_CMD_RETURN_t cmd_info(CLI_PARSED_CMD_t *cmdp) {
     if (cmdp->nParams != 0) {
@@ -29,6 +31,27 @@ CLI_CMD_RETURN_t cmd_dev(CLI_PARSED_CMD_t *cmdp) {
 
     printf("dev1\n");
     printf("dev2\n");
+    return CMD_DONE;
+}
+
+CLI_CMD_RETURN_t cmd_set(CLI_PARSED_CMD_t *cmdp) {
+    if (cmdp->nParams != 2) {
+        return CMD_WRONG_N;
+    }
+
+    if (strncmp(cmdp->params[0], "master", 6) == 0) {
+        if (strncmp(cmdp->params[1], "on", 2) == 0) {
+            MOD_STATE.caps_sw |= AG_CAP_SW_TMC;
+        } else {
+            MOD_STATE.caps_sw &= (uint8_t) (~AG_CAP_SW_TMC);
+        }
+    }
+
+    return CMD_DONE;
+}
+
+CLI_CMD_RETURN_t cmd_save(CLI_PARSED_CMD_t *cmdp) {
+    stor_save_state();
     return CMD_DONE;
 }
 

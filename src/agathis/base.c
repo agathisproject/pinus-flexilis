@@ -3,20 +3,19 @@
 #include "base.h"
 
 #include <stdio.h>
+
 #if defined(__AVR__)
 #include <avr/wdt.h>
-#include "../hw/gpio.h"
-#include "../platform.h"
-#elif defined(__XC16__)
-#include "../hw/gpio.h"
-#include "../platform.h"
 #elif defined(__linux__)
-#include <stdlib.h>
-
 #include "../sim/state.h"
 #include "../sim/misc.h"
 #endif
+
+#include "cmds.h"
 #include "config.h"
+#include "../hw/gpio.h"
+#include "../hw/storage.h"
+#include "../platform/platform.h"
 
 AG_MC_STATE_t MOD_STATE = {.caps_hw_ext = 0, .caps_hw_int = 0, .caps_sw = 0,
                            .last_err = 0, .type = 0,
@@ -71,106 +70,6 @@ void p_gpio_addr_u(uint8_t addr) {
 
 }
 #endif
-
-static uint8_t p_get_eeprom_byte(uint16_t addr) {
-#if defined(__AVR__)
-    return 0xFF;
-#elif defined(__XC16__)
-    return 0xFF;
-#elif defined(__linux__)
-    const char *fName = SIM_STATE.eeprom_path;
-    FILE *fp;
-
-    fp = fopen(fName, "rb");
-    if (!fp) {
-        perror("CANNOT open file");
-        exit(EXIT_FAILURE);
-    }
-
-    fseek(fp, addr, SEEK_SET);
-    uint8_t tmp = (uint8_t) fgetc(fp);
-    fclose(fp);
-
-    return tmp;
-#endif
-}
-
-static void p_get_eeprom_str(uint16_t addr, uint8_t len, char *str) {
-#if defined(__AVR__)
-    memset(str, 0, len * sizeof(char) );
-#elif defined(__XC16__)
-    memset(str, 0, len * sizeof(char) );
-#elif defined(__linux__)
-    const char *fName = SIM_STATE.eeprom_path;
-    FILE *fp;
-
-    fp = fopen(fName, "rb");
-    if (!fp) {
-        perror("CANNOT open file");
-        exit(EXIT_FAILURE);
-    }
-
-    fseek(fp, addr, SEEK_SET);
-    for (unsigned int i = 0; i < len; i++) {
-        str[i] = (char) fgetc(fp);
-    }
-    str[len] = '\0';
-
-    fclose(fp);
-#endif
-}
-
-/**
- * read floating point value from EEPROM
- *
- * Reads a 16b value from EEPROM as a integer, then divide by 100
- * Possible values are between -327.68 and 327.67
- * @param addr
- * @param f
- * @return
- */
-static float p_get_eeprom_float(uint16_t addr) {
-#if defined(__AVR__)
-    return 0.0;
-#elif defined(__XC16__)
-    return 0.0;
-#elif defined(__linux__)
-    const char *fName = SIM_STATE.eeprom_path;
-    FILE *fp;
-
-    fp = fopen(fName, "rb");
-    if (!fp) {
-        perror("CANNOT open file");
-        exit(EXIT_FAILURE);
-    }
-
-    int16_t tmp = 0;
-    fseek(fp, addr, SEEK_SET);
-    tmp = (int16_t) fgetc(fp);
-    fseek(fp, (addr + 1), SEEK_SET);
-    tmp += (int16_t) (fgetc(fp) << 8);
-
-    fclose(fp);
-    return ((float) tmp / 100.0f);
-#endif
-}
-
-void p_restore_state(void) {
-    uint8_t ver = p_get_eeprom_byte(0);
-    printf("%s EEPROM ver %d\n", PREFIX_MC, ver);
-    if (ver == 0xFF) {
-        return;
-    }
-
-    p_get_eeprom_str(16, 16, MOD_STATE.mfr_name);
-    p_get_eeprom_str(32, 16, MOD_STATE.mfr_pn);
-    p_get_eeprom_str(48, 16, MOD_STATE.mfr_sn);
-
-    MOD_STATE.i5_nom = p_get_eeprom_float(64);
-    MOD_STATE.i5_cutoff = p_get_eeprom_float(66);
-    MOD_STATE.i3_nom = p_get_eeprom_float(68);
-    MOD_STATE.i3_cutoff = p_get_eeprom_float(70);
-}
 
 void ag_add_remote_mod(const uint32_t *mac, uint8_t caps) {
     int idx_free = -1;
@@ -265,30 +164,9 @@ void ag_init(void) {
 //           MOD_STATE.addr_d, MOD_STATE.addr_u, MOD_STATE.addr_i2c);
 
 #if MOD_HAS_EEPROM
-    p_restore_state();
+    stor_restore_state();
 #endif
     MOD_STATE.last_err = 0;
-}
-
-/**
- * @brief returns the MAC address
- * @param mac array of 6 * uint8_t
- */
-void ag_get_MAC(uint8_t *mac) {
-    for (int i = 0; i < 6; i++) {
-        mac[i] = SIM_STATE.mac[i];
-    }
-}
-
-/**
- * @brief returns the MAC address
- * @param mac array of 2 * uint32_t
- */
-void ag_get_MAC_compact(uint32_t *mac) {
-    mac[1] = ((uint32_t) SIM_STATE.mac[5] << 16) | ((uint32_t) SIM_STATE.mac[4] <<
-             8) | SIM_STATE.mac[3];
-    mac[0] = ((uint32_t) SIM_STATE.mac[2] << 16) | ((uint32_t) SIM_STATE.mac[1] <<
-             8) | SIM_STATE.mac[0];
 }
 
 float ag_get_I5_NOM(void) {

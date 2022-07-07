@@ -5,13 +5,13 @@
 /** @file */
 
 #include <stdint.h>
+
 #if defined(__XC16__)
 #include <FreeRTOS.h>
 #include <task.h>
 #include <semphr.h>
 #include <queue.h>
 #endif
-#include "cmds.h"
 
 void ag_comm_init(void);
 

@@ -43,16 +43,22 @@ void CLI_setPrompt(const char *str) {
     strncpy(p_CLI_PROMPT, str, CLI_PROMPT_SIZE);
 }
 
-static CLI_CMD_t p_cmd_root[3]  = {
+static CLI_CMD_t p_cmd_root[4]  = {
     {"info", "", "show module info", &cmd_info},
     {"dev",  "", "show devices", &cmd_dev},
+    {"set",  "", "change configuration", &cmd_set},
+    {"save", "", "save configuration", &cmd_save},
 };
-static CLI_FOLDER_t p_f_root = {"", 2, p_cmd_root, NULL, NULL, NULL, NULL, NULL};
+static CLI_FOLDER_t p_f_root = {"", sizeof(p_cmd_root) / sizeof(p_cmd_root[0]), p_cmd_root,
+                                NULL, NULL, NULL, NULL, NULL
+                               };
 
 static CLI_CMD_t p_cmd_mod[1]  = {
     {"info", "", "show modules", &cmd_mod_info},
 };
-static CLI_FOLDER_t p_f_mod = {"mod", 1, p_cmd_mod, &p_cmd_mod[0], NULL, NULL, NULL, NULL};
+static CLI_FOLDER_t p_f_mod = {"mod", sizeof(p_cmd_mod) / sizeof(p_cmd_mod[0]), p_cmd_mod,
+                               &p_cmd_mod[0], NULL, NULL, NULL, NULL
+                              };
 
 static CLI_FOLDER_t p_f_tfun = {"tfun", 0, NULL, NULL, NULL, NULL, NULL, NULL};
 
@@ -64,7 +70,9 @@ static CLI_CMD_t p_cmd_pwr[4]  = {
     {"v5_load", "[on|off]", "V5 load switch", &cmd_pwr_v5_load},
 };
 #endif
-static CLI_FOLDER_t p_f_pwr  = {"pwr", 4, p_cmd_pwr, &p_cmd_pwr[0], NULL, NULL, NULL, NULL};
+static CLI_FOLDER_t p_f_pwr  = {"pwr", sizeof(p_cmd_pwr) / sizeof(p_cmd_pwr[0]), p_cmd_pwr,
+                                &p_cmd_pwr[0], NULL, NULL, NULL, NULL
+                               };
 static CLI_FOLDER_t p_f_clk  = {"clk", 0, NULL, NULL, NULL, NULL, NULL, NULL};
 static CLI_FOLDER_t p_f_pps  = {"pps", 0, NULL, NULL, NULL, NULL, NULL, NULL};
 static CLI_FOLDER_t p_f_jtag = {"jtag", 0, NULL, NULL, NULL, NULL, NULL, NULL};

@@ -3,27 +3,27 @@
 #include "comm.h"
 
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
+
 #if defined(__AVR__)
 #include <avr/wdt.h>
-#include "../hw/gpio.h"
-#include "../platform.h"
-#elif defined(__XC16__)
-#include "../hw/gpio.h"
-#include "../platform.h"
 #elif defined(__linux__)
 #include <dirent.h>
 #include <fcntl.h>
 #include <mqueue.h>
 #include <signal.h>
-#include <stdlib.h>
-#include <string.h>
-#include <time.h>
 #include <unistd.h>
 
 #include "../sim/state.h"
 #endif
+
 #include "config.h"
 #include "base.h"
+#include "../hw/gpio.h"
+#include "../hw/storage.h"
+#include "../platform/platform.h"
 
 #if defined(__AVR__)
 void ag_rx_cback(void) {
@@ -68,7 +68,7 @@ static void ag_rx_cback(union sigval sv) {
         uint32_t mac_lcl[2];
         uint8_t mac[6];
 
-        ag_get_MAC(mac);
+        stor_get_MAC(mac);
         mac_dst[1] = ((uint32_t) buff[5] << 16) | ((uint32_t) buff[4] << 8) | buff[3];
         mac_dst[0] = ((uint32_t) buff[2] << 16) | ((uint32_t) buff[1] << 8) | buff[0];
         mac_src[1] = ((uint32_t) buff[11] << 16) | ((uint32_t) buff[10] << 8) | buff[9];
@@ -163,7 +163,7 @@ void ag_comm_main(void) {
 
     if ((ts_now % 5) == 0) {
         memset(buff, 0, 64 * sizeof (uint8_t));
-        ag_get_MAC(mac);
+        stor_get_MAC(mac);
         for (int i = 0; i < 6; i++) {
             buff[i] = 0xFF;
         }
