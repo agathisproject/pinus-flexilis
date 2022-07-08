@@ -1,6 +1,6 @@
 = pinus-flexilis
 
-Agathis Management Controller CLI specification.
+Agathis Management Controller (MC) CLI specification.
 
 == Assumptions
 
@@ -26,7 +26,7 @@ List commands available in the current level
 
 Change the command hierarchy level (path)
 
-=== levels
+== Command Levels
 
 The commands are organized in the following levels:
 
@@ -40,10 +40,12 @@ The commands are organized in the following levels:
     ** pcie
   * mod - commands for other MCs
 
-== root level commands
+== root Level Commands
 
 === info
 
 === dev
 
 === set
+
+=== save
