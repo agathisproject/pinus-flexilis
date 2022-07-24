@@ -7,7 +7,7 @@
 #include <string.h>
 
 #include "../agathis/base.h"
-#include "../agathis/cmds.h"
+#include "../agathis/defs.h"
 #include "../agathis/config.h"
 #include "../hw/storage.h"
 
@@ -18,6 +18,7 @@ CLI_CMD_RETURN_t cmd_info(CLI_PARSED_CMD_t *cmdp) {
 
     printf("caps = %#04x/%#04x/%#04x\n", MOD_STATE.caps_hw_ext,
            MOD_STATE.caps_hw_int, MOD_STATE.caps_sw);
+    printf("error = %d\n", MOD_STATE.last_err);
     printf("MFR_NAME = %s\n", MOD_STATE.mfr_name);
     printf("MFR_PN = %s\n", MOD_STATE.mfr_pn);
     printf("MFR_SN = %s\n", MOD_STATE.mfr_sn);
@@ -64,8 +65,13 @@ CLI_CMD_RETURN_t cmd_mod_info(CLI_PARSED_CMD_t *cmdp) {
         if (REMOTE_MODS[i].last_seen == -1) {
             continue;
         }
-        printf("%06x:%06x (%d)\n", REMOTE_MODS[i].mac[1], REMOTE_MODS[i].mac[0],
-               REMOTE_MODS[i].last_seen);
+        if ((REMOTE_MODS[i].caps & AG_CAP_SW_TMC) != 0) {
+            printf("%06x:%06x * (%d)\n", REMOTE_MODS[i].mac[1], REMOTE_MODS[i].mac[0],
+                   REMOTE_MODS[i].last_seen);
+        } else  {
+            printf("%06x:%06x (%d)\n", REMOTE_MODS[i].mac[1], REMOTE_MODS[i].mac[0],
+                   REMOTE_MODS[i].last_seen);
+        }
     }
     return CMD_DONE;
 }

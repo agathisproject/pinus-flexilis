@@ -13,6 +13,8 @@
 #include <queue.h>
 #endif
 
+#define AG_MSG_LEN 32
+
 void ag_comm_init(void);
 
 void ag_comm_main(void);

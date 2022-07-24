@@ -19,7 +19,7 @@
 #include "../sim/state.h"
 #endif
 
-#include "config.h"
+#include "defs.h"
 #include "base.h"
 #include "../hw/gpio.h"
 #include "../hw/storage.h"
@@ -62,7 +62,7 @@ static void ag_rx_cback(union sigval sv) {
         return;
     }
     //printf("DBG RX@%d %zd bytes\n", SIM_STATE.id, nb_rx);
-    if (nb_rx == 64) {
+    if (nb_rx == AG_MSG_LEN) {
         uint32_t mac_dst[2];
         uint32_t mac_src[2];
         uint32_t mac_lcl[2];
@@ -77,11 +77,13 @@ static void ag_rx_cback(union sigval sv) {
         mac_lcl[0] = ((uint32_t) mac[2] << 16) | ((uint32_t) mac[1] << 8) | mac[0];
         if ((mac_dst[1] == 0xFFFFFF) && (mac_dst[0] == 0xFFFFFF)) {
             //printf("DBG RX@%d brcst from %06x:%06x\n", SIM_STATE.id, mac_src[1], mac_src[0]);
-            ag_add_remote_mod(mac_src, buff[12]);
+            ag_add_remote_mod(mac_src, buff[16]);
         }
         if ((mac_dst[1] == mac_lcl[1]) && (mac_dst[0] == mac_lcl[0])) {
             printf("DBG RX@%d msg from %06x:%06x\n", SIM_STATE.id, mac_src[1], mac_src[0]);
         }
+    } else {
+        printf("INCORRECT number of bytes RX\n");
     }
     free(buff);
     p_mq_notify();
@@ -158,11 +160,11 @@ void ag_comm_main(void) {
 
 #elif defined(__linux__)
     time_t ts_now = time(NULL);
-    uint8_t buff[64];
+    uint8_t buff[AG_MSG_LEN];
     uint8_t mac[6];
 
     if ((ts_now % 5) == 0) {
-        memset(buff, 0, 64 * sizeof (uint8_t));
+        memset(buff, 0, AG_MSG_LEN * sizeof (uint8_t));
         stor_get_MAC(mac);
         for (int i = 0; i < 6; i++) {
             buff[i] = 0xFF;
@@ -170,10 +172,13 @@ void ag_comm_main(void) {
         for (int i = 0; i < 6; i++) {
             buff[i + 6] = mac[i];
         }
-        ag_tx(buff, 64);
+        buff[12] = AG_PROTO_VER;
+        buff[16] = MOD_STATE.caps_sw;
+        ag_tx(buff, AG_MSG_LEN);
     }
 
     sleep(1);
     ag_upd_remote_mods();
+    ag_upd_alarm();
 #endif
 }

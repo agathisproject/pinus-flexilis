@@ -55,6 +55,8 @@ void ag_add_remote_mod(const uint32_t *mac, uint8_t caps);
 
 void ag_upd_remote_mods(void);
 
+void ag_upd_alarm(void);
+
 #if defined(__XC16__)
 extern SemaphoreHandle_t xSemaphore_MMC;
 #endif

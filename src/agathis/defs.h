@@ -30,4 +30,7 @@ typedef enum {
 #define AG_CMD_MFR          0xFE
 #define AG_CMD_MFR_NB       4
 
+#define AG_ERR_NONE         0
+#define AG_ERR_MULTI_MASTER 1
+
 #endif /* AGATHIS_98RXG9U8BUUHY401 */

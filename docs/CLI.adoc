@@ -44,8 +44,24 @@ The commands are organized in the following levels:
 
 === info
 
+Shows information about the module:
+
+  * capabilities
+  * alarms
+  * manufacturer name / PN / SN
+
 === dev
+
+Shows devices that are detected in the network.
 
 === set
 
+Sets configuration options on the module.
+
+  * set master [on|off]
+  ** *on* sets the current module as master
+  ** *anyhting else than on* sets the current module as
+
 === save
+
+Save configuration.

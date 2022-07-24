@@ -11,7 +11,7 @@
 #include "../sim/misc.h"
 #endif
 
-#include "cmds.h"
+#include "defs.h"
 #include "config.h"
 #include "../hw/gpio.h"
 #include "../hw/storage.h"
@@ -103,12 +103,29 @@ void ag_upd_remote_mods(void) {
             REMOTE_MODS[i].mac[0] = 0;
             REMOTE_MODS[i].mac[1] = 0;
             REMOTE_MODS[i].caps = 0;
-            REMOTE_MODS[i].last_err = 0;
+            REMOTE_MODS[i].last_err = AG_ERR_NONE;
             REMOTE_MODS[i].last_seen = -1;
         } else {
             REMOTE_MODS[i].last_seen += 1;
         }
     }
+}
+
+void ag_upd_alarm(void) {
+    int nm = 0;
+    for (int i = 0 ; i < MC_MAX_CNT; i ++) {
+        if ((REMOTE_MODS[i].caps & AG_CAP_SW_TMC) != 0) {
+            nm += 1;
+        }
+    }
+    if ((MOD_STATE.caps_sw & AG_CAP_SW_TMC) != 0) {
+        nm += 1;
+    }
+    if (nm > 1) {
+        MOD_STATE.last_err = AG_ERR_MULTI_MASTER;
+        return;
+    }
+    MOD_STATE.last_err = AG_ERR_NONE;
 }
 
 void ag_reset(void) {
@@ -166,7 +183,7 @@ void ag_init(void) {
 #if MOD_HAS_EEPROM
     stor_restore_state();
 #endif
-    MOD_STATE.last_err = 0;
+    MOD_STATE.last_err = AG_ERR_NONE;
 }
 
 float ag_get_I5_NOM(void) {
