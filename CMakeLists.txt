@@ -1,6 +1,6 @@
 cmake_minimum_required (VERSION 3.0)
 project (pinus-flexilis LANGUAGES C)
-set(CMAKE_VERBOSE_MAKEFILE ON)
+#set(CMAKE_VERBOSE_MAKEFILE ON)
 
 add_compile_options("-Os" "-Wall" "-Wextra" "-Wpedantic"
         "-Wformat=2" "-Wformat-truncation" "-Wformat-overflow"
@@ -12,27 +12,38 @@ add_compile_options("-Os" "-Wall" "-Wextra" "-Wpedantic"
         "-fno-common" "-Wstack-usage=255"
 )
 
+add_library(ini STATIC
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/opt/ini/ini.c
+)
+
 add_library(cli STATIC
         ${CMAKE_CURRENT_SOURCE_DIR}/src/cli/cli.c
         ${CMAKE_CURRENT_SOURCE_DIR}/src/cli/cmd.c
 )
 
+add_library(hw STATIC
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/hw/gpio.c
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/hw/storage.c
+        )
+
+add_library(platform STATIC
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/platform/platform.c
+        )
+
 add_library(agathis STATIC
         ${CMAKE_CURRENT_SOURCE_DIR}/src/agathis/base.c
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/agathis/comm.c
 )
-
-add_library(ini STATIC
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/opt/ini/ini.c
-)
-
-add_library(sim STATIC
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/sim/state.c
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/sim/misc.c
-)
+target_link_libraries(agathis hw platform)
 
 add_executable(${PROJECT_NAME}
-    "src/main.c"
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/sim/state.c
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/sim/misc.c
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/sim/top.c
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/main.c
 )
 target_link_libraries(${PROJECT_NAME}
-        cli agathis ini sim
+        pthread rt
+        ini cli hw platform
+        agathis
 )

@@ -1,0 +1,51 @@
+= pinus-flexilis
+
+Agathis Management Controller (MC) CLI specification.
+
+== Assumptions
+
+  * the CLI is normally accessed by connecting to the service port
+  * the user of this interface has a service profile (can change configuration, no access to data links)
+  * the first service user (default service user) is the test engineer on the production line of the module
+//  * the default service user does not need any credentials to get the MC (TMC or MMC) to answer
+//  * the default service user credentials can be changed in the field by an admin (first customer) accessing the Agathis system/stack from a data link
+  * the prompt line displays the MC id (MAC address)
+  * commands are organized hierarchically
+
+== Built-in Commands
+
+=== pwd
+
+Shows the current hierarchy level (path)
+
+=== ls
+
+List commands available in the current level
+
+=== cd
+
+Change the command hierarchy level (path)
+
+== Command Levels
+
+The commands are organized in the following levels:
+
+  * (root) - commands for the local MC
+  * tfun - commands for local devices
+    ** pwr
+    ** clk
+    ** pps
+    ** jtag
+    ** usb
+    ** pcie
+  * mod - commands for other MCs
+
+== root Level Commands
+
+=== info
+
+=== dev
+
+=== set
+
+=== save

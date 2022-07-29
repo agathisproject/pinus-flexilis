@@ -1,0 +1,28 @@
+= pinus-flexilis
+
+CLI simulator for Agathis Management Controller.
+
+== Build
+
+[source,bash]
+----
+mkdir build
+cd build
+cmake ..
+make
+----
+
+== Usage
+
+[source,bash]
+----
+./pinus-flexilis
+----
+
+To exit CTRL+C
+
+You can open multiple instances of the program and they will start communicating between them to simlate wireless connection.
+
+== Links
+
+* https://github.com/agathisproject/pinus-flexilis/blob/docs/docs/CLI.adoc[CLI specification]

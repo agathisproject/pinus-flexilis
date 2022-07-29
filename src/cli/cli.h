@@ -8,13 +8,11 @@
 
 #include "cli_types.h"
 
-#define CLI_ENV_GRP_STACK_SIZE 8
 typedef struct {
-    uint8_t groupStack[CLI_ENV_GRP_STACK_SIZE];
-    uint8_t groupStackIdx;
+    CLI_FOLDER_t *folder;
+    char path[CLI_TREE_DEPTH_MAX][CLI_BASE_NAME_SIZE];
+    uint8_t pathIdx;
 } CLI_ENV_t;
-
-extern CLI_CMD_t *CMDS;
 
 /**
  * @return get CLI prompt
@@ -47,11 +45,5 @@ uint8_t CLI_parseCmd(void);
  * @brief execute command
  */
 void CLI_execute(void);
-
-/**
- *
- * @return
- */
-unsigned int CLI_getCmdCnt(void);
 
 #endif /* CLI_YP8GJVG3TCW7BWQW */

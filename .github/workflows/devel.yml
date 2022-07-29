@@ -24,5 +24,5 @@ jobs:
           name: linux-x86_64
           path: |
             pinus-flexilis
-            EEPROM.BIN
-            config.ini
+            cfg/EEPROM.BIN
+            cfg/config.ini

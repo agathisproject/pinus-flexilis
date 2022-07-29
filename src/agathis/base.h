@@ -5,13 +5,13 @@
 /** @file */
 
 #include <stdint.h>
+
 #if defined(__XC16__)
 #include <FreeRTOS.h>
 #include <task.h>
 #include <semphr.h>
 #include <queue.h>
 #endif
-#include "cmds.h"
 
 #define PREFIX_MC "[ MC]"
 #define I2C_OFFSET 0x20
@@ -20,11 +20,9 @@
  * @brief state of the local MC (Management Controller)
  */
 typedef struct {
-    uint8_t addr_d;        /**< down-trunk management address */
-    uint8_t addr_u;        /**< up-trunk management address */
-    uint8_t addr_i2c;      /**< MC I2C address */
-    uint8_t caps_ext;      /**< HW capabilities that should be advertised */
-    uint8_t caps_int;      /**< HW capabilities that should NOT be advertised */
+    uint8_t caps_hw_ext;    /**< HW capabilities that should be advertised */
+    uint8_t caps_hw_int;    /**< HW capabilities that should NOT be advertised */
+    uint8_t caps_sw;        /**< SW capabilities set by user */
     uint8_t last_err;
     uint16_t type;
     char mfr_name[16];
@@ -38,23 +36,24 @@ typedef struct {
 
 extern AG_MC_STATE_t MOD_STATE;
 
-typedef enum {
-    MC_NOT_PRESENT,
-    MC_INVALID,
-    MC_PRESENT,
-} AG_MC_SCAN_STATE;
-
 /**
  * @brief info about the other MCs (Management Controllers)
  */
 typedef struct {
-    AG_MC_SCAN_STATE state;
-    uint8_t pow_rst;
-    uint8_t alarms;
-} AG_MC_SCAN_INFO_t;
+    uint32_t mac[2];
+    uint8_t caps;
+    uint8_t last_err;
+    int8_t last_seen;
+} AG_RMT_MC_STATE_t;
 
 #define MC_MAX_CNT 16 /** max number of MCs in the chain, including the local one */
-extern AG_MC_SCAN_INFO_t REMOTE_MODS[MC_MAX_CNT - 1];
+#define MC_MAX_AGE 30
+
+extern AG_RMT_MC_STATE_t REMOTE_MODS[MC_MAX_CNT];
+
+void ag_add_remote_mod(const uint32_t *mac, uint8_t caps);
+
+void ag_upd_remote_mods(void);
 
 #if defined(__XC16__)
 extern SemaphoreHandle_t xSemaphore_MMC;
