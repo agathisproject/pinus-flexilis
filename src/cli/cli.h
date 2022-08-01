@@ -37,7 +37,7 @@ void CLI_getCmd(void);
 /**
  * @brief parse command from internal buffer
  *
- * @return 0 is no errors
+ * @return 0 if no errors
  */
 uint8_t CLI_parseCmd(void);
 

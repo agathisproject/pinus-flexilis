@@ -25,6 +25,14 @@ uint8_t p_CLI_IsRxReady(void) {
 uint8_t p_CLI_GetChar(void) {
     return (uint8_t) getchar();
 }
+#elif defined (CONFIG_IDF_TARGET)
+uint8_t p_CLI_IsRxReady(void) {
+    return 1;
+}
+
+uint8_t p_CLI_GetChar(void) {
+    return (uint8_t) getchar();
+}
 #endif
 
 static char p_CLI_BUFF[CLI_BUFF_SIZE + 1] = { 0 };
@@ -69,10 +77,13 @@ static CLI_CMD_t p_cmd_pwr[4]  = {
     {"v5_src",  "[on|off]", "V5 source switch", &cmd_pwr_v5_src},
     {"v5_load", "[on|off]", "V5 load switch", &cmd_pwr_v5_load},
 };
-#endif
 static CLI_FOLDER_t p_f_pwr  = {"pwr", sizeof(p_cmd_pwr) / sizeof(p_cmd_pwr[0]), p_cmd_pwr,
                                 &p_cmd_pwr[0], NULL, NULL, NULL, NULL
                                };
+#else
+static CLI_FOLDER_t p_f_pwr  = {"pwr", 0, NULL, NULL, NULL, NULL, NULL, NULL};
+#endif
+
 static CLI_FOLDER_t p_f_clk  = {"clk", 0, NULL, NULL, NULL, NULL, NULL, NULL};
 static CLI_FOLDER_t p_f_pps  = {"pps", 0, NULL, NULL, NULL, NULL, NULL, NULL};
 static CLI_FOLDER_t p_f_jtag = {"jtag", 0, NULL, NULL, NULL, NULL, NULL, NULL};
@@ -129,7 +140,7 @@ void CLI_getCmd(void) {
     while (1) {
         if (p_CLI_IsRxReady()) {
             byteIn = p_CLI_GetChar();
-            //printf("%x\n", byteIn);
+            //printf("DBG: %x\n", byteIn);
 
             // NL or CR end the command
             if ((byteIn == 10) || (byteIn == 13)) {
@@ -145,7 +156,7 @@ void CLI_getCmd(void) {
             }
             // skip non-printable characters
             if ((byteIn < 32) || (byteIn > 126)) {
-                break;
+                continue;
             }
             // if buffer full skip adding
             if (idx == CLI_BUFF_SIZE) {
@@ -283,7 +294,7 @@ void CLI_execute(void) {
     unsigned int i = 0;
     CLI_CMD_RETURN_t cmdRet = CMD_NOT_FOUND;
 
-    //printf("DBG: execute %s (%d params) %d\n", p_PARSED_CMD.cmd, p_PARSED_CMD.nParams, p_CLI_ENV.group);
+    //printf("DBG: execute %s (%d params) %d\n", p_PARSED_CMD.cmd, p_PARSED_CMD.nParams, p_CLI_ENV.folder);
     if (strlen(p_PARSED_CMD.cmd) == 0) {
         if (p_CLI_ENV.folder->cmdDefault == NULL) {
             if (p_no_cmd == 4) {

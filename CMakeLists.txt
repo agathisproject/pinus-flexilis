@@ -40,6 +40,7 @@ add_executable(${PROJECT_NAME}
         ${CMAKE_CURRENT_SOURCE_DIR}/src/sim/state.c
         ${CMAKE_CURRENT_SOURCE_DIR}/src/sim/misc.c
         ${CMAKE_CURRENT_SOURCE_DIR}/src/sim/top.c
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/tasks.c
         ${CMAKE_CURRENT_SOURCE_DIR}/src/main.c
 )
 target_link_libraries(${PROJECT_NAME}

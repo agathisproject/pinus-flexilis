@@ -1,17 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include <signal.h>
-#include <stdio.h>
-#include <stdint.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <pthread.h>
-#include <unistd.h>
 
+#include "tasks.h"
 #include "agathis/base.h"
-#include "agathis/comm.h"
 #include "cli/cli.h"
-#include "hw/storage.h"
-#include "sim/state.h"
 #include "sim/top.h"
 
 static pthread_t pt_id1, pt_id2;
@@ -21,44 +17,6 @@ void sigint_handler(int dummy) {
     //pthread_cancel(pt_id2);
 }
 
-static void p_CLI_init_prompt(void) {
-    char prompt[CLI_PROMPT_SIZE];
-    uint32_t mac[2];
-
-    stor_get_MAC_compact(mac);
-    snprintf(prompt, CLI_PROMPT_SIZE, "[%06x:%06x]$ ", mac[1], mac[0]);
-    printf("press ? for help\n");
-    CLI_setPrompt(prompt);
-}
-
-void *thread_cli (void *vargp) {
-    uint8_t parseSts = 1;
-
-    if ((SIM_STATE.sim_flags & SIM_FLAG_NO_CONSOLE) != 0) {
-        while (1) {
-            sleep(1);
-        }
-    } else {
-        p_CLI_init_prompt();
-        while (1) {
-            printf("%s", CLI_getPrompt());
-            CLI_getCmd();
-            parseSts = CLI_parseCmd();
-            if (parseSts == 0) {
-                CLI_execute();
-            }
-        }
-    }
-}
-
-void *thread_comm (void *vargp) {
-    ag_comm_init();
-
-    while (1) {
-        ag_comm_main();
-    }
-}
-
 int main(int argc, char *argv[]) {
     sim_init(argc, argv);
     ag_init();
@@ -66,8 +24,8 @@ int main(int argc, char *argv[]) {
 
     signal(SIGINT, sigint_handler);
 
-    pthread_create(&pt_id1, NULL, thread_cli, NULL);
-    pthread_create(&pt_id2, NULL, thread_comm, NULL);
+    pthread_create(&pt_id1, NULL, task_cli, NULL);
+    pthread_create(&pt_id2, NULL, task_rf, NULL);
     pthread_join(pt_id1, NULL);
     //pthread_join(pt_id2, NULL);
 
