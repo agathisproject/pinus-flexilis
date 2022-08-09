@@ -66,13 +66,25 @@ CLI_CMD_RETURN_t cmd_mod_info(CLI_PARSED_CMD_t *cmdp) {
             continue;
         }
         if ((REMOTE_MODS[i].caps & AG_CAP_SW_TMC) != 0) {
-            printf("%06x:%06x * (%d)\n", REMOTE_MODS[i].mac[1], REMOTE_MODS[i].mac[0],
+            printf("  [%02d] %06x:%06x * (%ds)\n", i, REMOTE_MODS[i].mac[1],
+                   REMOTE_MODS[i].mac[0],
                    REMOTE_MODS[i].last_seen);
         } else  {
-            printf("%06x:%06x (%d)\n", REMOTE_MODS[i].mac[1], REMOTE_MODS[i].mac[0],
+            printf("  [%02d] %06x:%06x (%ds)\n", i, REMOTE_MODS[i].mac[1],
+                   REMOTE_MODS[i].mac[0],
                    REMOTE_MODS[i].last_seen);
         }
     }
+    return CMD_DONE;
+}
+
+CLI_CMD_RETURN_t cmd_mod_set(CLI_PARSED_CMD_t *cmdp) {
+    if (cmdp->nParams != 0) {
+        return CMD_WRONG_N;
+    }
+
+
+
     return CMD_DONE;
 }
 

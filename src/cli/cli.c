@@ -61,8 +61,9 @@ static CLI_FOLDER_t p_f_root = {"", sizeof(p_cmd_root) / sizeof(p_cmd_root[0]), 
                                 NULL, NULL, NULL, NULL, NULL
                                };
 
-static CLI_CMD_t p_cmd_mod[1]  = {
+static CLI_CMD_t p_cmd_mod[2]  = {
     {"info", "", "show modules", &cmd_mod_info},
+    {"set", "", "change configuration", &cmd_mod_set},
 };
 static CLI_FOLDER_t p_f_mod = {"mod", sizeof(p_cmd_mod) / sizeof(p_cmd_mod[0]), p_cmd_mod,
                                &p_cmd_mod[0], NULL, NULL, NULL, NULL

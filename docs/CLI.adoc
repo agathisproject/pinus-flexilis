@@ -40,7 +40,7 @@ The commands are organized in the following levels:
     ** pcie
   * mod - commands for other MCs
 
-== root Level Commands
+== root Commands
 
 === info
 
@@ -60,8 +60,28 @@ Sets configuration options on the module.
 
   * set master [on|off]
   ** *on* sets the current module as master
-  ** *anyhting else than on* sets the current module as
+  ** *anything else than on* sets the current module as
 
 === save
 
 Save configuration.
+
+== mod Commands
+
+=== info
+
+Shows information about the other  modules in the system:
+
+* id (for local use)
+* identifier (MAC)
+* number of seconds since last seen
+
+== set
+
+Sets configuration options on a remote module.
+
+*This is allowed only if the command is sent from the master module and there is only one master in the network*
+
+  * set *<id>* led [on|off]
+  ** *on* turns on the LED on the puppet module *<id>*
+  ** *anything else than on* turns off the LED on the puppet module *<id>*
