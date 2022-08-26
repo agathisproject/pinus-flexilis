@@ -205,3 +205,7 @@ float ag_get_I3_NOM(void) {
     return getValue_random((MOD_STATE.i3_nom * 0.5f), 5);
 #endif
 }
+
+void ag_id_external(void) {
+    printf("DBG: ID !!!\n");
+}

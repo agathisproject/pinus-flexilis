@@ -7,6 +7,7 @@
 #include <string.h>
 
 #include "../agathis/base.h"
+#include "../agathis/comm.h"
 #include "../agathis/defs.h"
 #include "../agathis/config.h"
 #include "../hw/storage.h"
@@ -78,13 +79,53 @@ CLI_CMD_RETURN_t cmd_mod_info(CLI_PARSED_CMD_t *cmdp) {
     return CMD_DONE;
 }
 
-CLI_CMD_RETURN_t cmd_mod_set(CLI_PARSED_CMD_t *cmdp) {
-    if (cmdp->nParams != 0) {
+CLI_CMD_RETURN_t cmd_mod_id(CLI_PARSED_CMD_t *cmdp) {
+    if (cmdp->nParams != 1) {
         return CMD_WRONG_N;
     }
 
+    uint8_t mc_id = (uint8_t) strtol(cmdp->params[0], NULL, 10);
+    if (mc_id >= MC_MAX_CNT) {
+        printf("INCORRECT id\n");
+        return CMD_DONE;
+    }
+    if (REMOTE_MODS[mc_id].last_seen == -1) {
+        printf("CANNOT send message to %d\n", mc_id);
+        return CMD_DONE;
+    }
 
+    uint8_t buff[AG_MSG_LEN];
+    memset(buff, 0, AG_MSG_LEN * sizeof (uint8_t));
+    buff[0] = AG_PROTO_VER1;
+    buff[1] = AG_PKT_TYPE_CMD;
+    buff[2] = AG_CMD_ID;
+    ag_comm_tx(REMOTE_MODS[mc_id].mac[1], REMOTE_MODS[mc_id].mac[0], buff,
+               AG_MSG_LEN);
+    return CMD_DONE;
+}
 
+CLI_CMD_RETURN_t cmd_mod_reset(CLI_PARSED_CMD_t *cmdp) {
+    if (cmdp->nParams != 3) {
+        return CMD_WRONG_N;
+    }
+
+    uint8_t mc_id = (uint8_t) strtol(cmdp->params[0], NULL, 10);
+    if (mc_id >= MC_MAX_CNT) {
+        printf("INCORRECT id\n");
+        return CMD_DONE;
+    }
+    if (REMOTE_MODS[mc_id].last_seen == -1) {
+        printf("CANNOT send message to %d\n", mc_id);
+        return CMD_DONE;
+    }
+
+    uint8_t buff[AG_MSG_LEN];
+    memset(buff, 0, AG_MSG_LEN * sizeof (uint8_t));
+    buff[0] = AG_PROTO_VER1;
+    buff[1] = AG_PKT_TYPE_CMD;
+    buff[2] = AG_CMD_RESET;
+    ag_comm_tx(REMOTE_MODS[mc_id].mac[1], REMOTE_MODS[mc_id].mac[0], buff,
+               AG_MSG_LEN);
     return CMD_DONE;
 }
 

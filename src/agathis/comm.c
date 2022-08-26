@@ -62,6 +62,8 @@ static void ag_rx_cback(union sigval sv) {
         return;
     }
     //printf("DBG RX@%d %zd bytes\n", SIM_STATE.id, nb_rx);
+    //printf("DBG RX@%d dst: %02x:%02x:%02x:%02x:%02x:%02x\n", SIM_STATE.id, buff[5], buff[4], buff[3], buff[2], buff[1], buff[0]);
+    //printf("DBG RX@%d src: %02x:%02x:%02x:%02x:%02x:%02x\n", SIM_STATE.id, buff[11], buff[10], buff[9], buff[8], buff[7], buff[6]);
     if (nb_rx == AG_MSG_LEN) {
         uint32_t mac_dst[2];
         uint32_t mac_src[2];
@@ -75,12 +77,21 @@ static void ag_rx_cback(union sigval sv) {
         mac_src[0] = ((uint32_t) buff[8] << 16) | ((uint32_t) buff[7] << 8) | buff[6];
         mac_lcl[1] = ((uint32_t) mac[5] << 16) | ((uint32_t) mac[4] << 8) | mac[3];
         mac_lcl[0] = ((uint32_t) mac[2] << 16) | ((uint32_t) mac[1] << 8) | mac[0];
-        if ((mac_dst[1] == 0xFFFFFF) && (mac_dst[0] == 0xFFFFFF)) {
+        if ((mac_dst[1] == 0x00FFFFFF) && (mac_dst[0] == 0x00FFFFFF)) {
             //printf("DBG RX@%d brcst from %06x:%06x\n", SIM_STATE.id, mac_src[1], mac_src[0]);
-            ag_add_remote_mod(mac_src, buff[16]);
+            if ((buff[12] == AG_PROTO_VER1) && (buff[13] == AG_PKT_TYPE_STATUS)) {
+                ag_add_remote_mod(mac_src, buff[12 + 4]);
+            }
         }
         if ((mac_dst[1] == mac_lcl[1]) && (mac_dst[0] == mac_lcl[0])) {
-            printf("DBG RX@%d msg from %06x:%06x\n", SIM_STATE.id, mac_src[1], mac_src[0]);
+            //printf("DBG RX@%d msg from %06x:%06x\n", SIM_STATE.id, mac_src[1], mac_src[0]);
+            if ((buff[12] == AG_PROTO_VER1) && (buff[13] == AG_PKT_TYPE_CMD)) {
+                if (buff[14] == AG_CMD_ID) {
+                    ag_id_external();
+                } else if (buff[14] == AG_CMD_RESET) {
+                    ag_reset();
+                }
+            }
         }
     } else {
         printf("INCORRECT number of bytes RX\n");
@@ -103,12 +114,20 @@ static void p_mq_notify(void) {
 }
 #endif
 
-int ag_tx(uint8_t *buff, uint8_t nb) {
+int ag_comm_tx(uint32_t dst_mac1, uint32_t dst_mac0, uint8_t *buff,
+               uint8_t nb) {
 #if defined(__linux__)
-    char mq_name[32] = "";
-    char dst_name[32] = "";
+    char mq_name[SIM_PATH_LEN] = "";
+    char dst_name[SIM_PATH_LEN] = "";
+    uint8_t mac[6];
+    char *send_data = (char *) malloc((nb + 12) * sizeof(char));
 
-    snprintf(mq_name, 32, "%s%03d", SIM_MQ_PREFIX, SIM_STATE.id);
+    if (send_data == NULL) {
+        printf("%s\n", "CANNOT malloc");
+        exit(EXIT_FAILURE);
+    }
+
+    snprintf(mq_name, SIM_PATH_LEN, "%s%03d", SIM_MQ_PREFIX, SIM_STATE.id);
 
     DIR *d = opendir("/dev/mqueue");
     if (d == NULL) {
@@ -122,7 +141,7 @@ int ag_tx(uint8_t *buff, uint8_t nb) {
         if (strncmp(SIM_MQ_PREFIX, dir->d_name, tmp_len) != 0) {
             continue;
         }
-        if (strncmp(mq_name, dir->d_name, 32) == 0) {
+        if (strncmp(mq_name, dir->d_name, SIM_PATH_LEN) == 0) {
             continue;
         }
 
@@ -134,8 +153,22 @@ int ag_tx(uint8_t *buff, uint8_t nb) {
             perror("CANNOT create mq");
             continue;
         }
+
         //printf("DBG TX@%d to %s\n", SIM_STATE.id, dst_name);
-        if (mq_send(queue, (const char *) buff, nb, 0) == -1) {
+        send_data[0] = (char) (dst_mac0 & 0xFF);
+        send_data[1] = (char) (dst_mac0 >> 8);
+        send_data[2] = (char) (dst_mac0 >> 16);
+        send_data[3] = (char) (dst_mac1 & 0xFF);
+        send_data[4] = (char) (dst_mac1 >> 8);
+        send_data[5] = (char) (dst_mac1 >> 16);
+        stor_get_MAC(mac);
+        for (int i = 6; i < 12; i++) {
+            send_data[i] = (char) mac[i - 6];
+        }
+        for (int i = 12; i < (nb + 12); i++) {
+            send_data[i] = (char) buff[i - 12];
+        }
+        if (mq_send(queue, (const char *) send_data, nb, 0) == -1) {
             perror("CANNOT send msg");
             continue;
         }
@@ -143,6 +176,7 @@ int ag_tx(uint8_t *buff, uint8_t nb) {
         mq_close(queue);
     }
     closedir(d);
+    free(send_data);
     return 0;
 #endif
 }
@@ -161,20 +195,13 @@ void ag_comm_main(void) {
 #elif defined(__linux__)
     time_t ts_now = time(NULL);
     uint8_t buff[AG_MSG_LEN];
-    uint8_t mac[6];
 
     if ((ts_now % 5) == 0) {
         memset(buff, 0, AG_MSG_LEN * sizeof (uint8_t));
-        stor_get_MAC(mac);
-        for (int i = 0; i < 6; i++) {
-            buff[i] = 0xFF;
-        }
-        for (int i = 0; i < 6; i++) {
-            buff[i + 6] = mac[i];
-        }
-        buff[12] = AG_PROTO_VER;
-        buff[16] = MOD_STATE.caps_sw;
-        ag_tx(buff, AG_MSG_LEN);
+        buff[0] = AG_PROTO_VER1;
+        buff[1] = AG_PKT_TYPE_STATUS;
+        buff[4] = MOD_STATE.caps_sw;
+        ag_comm_tx(0x00FFFFFF, 0x00FFFFFF, buff, AG_MSG_LEN);
     }
 
     sleep(1);

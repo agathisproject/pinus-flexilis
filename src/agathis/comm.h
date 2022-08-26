@@ -19,4 +19,6 @@ void ag_comm_init(void);
 
 void ag_comm_main(void);
 
+int ag_comm_tx(uint32_t dst_mac1, uint32_t dst_mac0, uint8_t *buff, uint8_t nb);
+
 #endif /* AGATHIS_COMM_ZC5DS878HG83B98T */

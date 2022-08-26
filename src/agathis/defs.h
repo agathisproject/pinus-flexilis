@@ -11,13 +11,15 @@ typedef enum {
 
 #define AG_CAP_INT_EEPROM    0x01
 
-#define AG_PROTO_VER         1
+#define AG_PROTO_VER1       1
 
-#define AG_CMD_SUMMARY       0x01
-#define AG_CMD_SUMMARY_NB    4
-#define AG_FLAG_RESET        0x01
+#define AG_PKT_TYPE_STATUS  0x00
+#define AG_PKT_TYPE_CMD     0x01
 
-#define AG_CMD_CAP           0x02
+#define AG_CMD_ID           0x01
+#define AG_CMD_RESET        0x02
+
+#define AG_CMD_CAP           0x03
 #define AG_CMD_CAP_NB        4
 #define AG_CAP_EXT_PCIE      0x40
 #define AG_CAP_EXT_USB       0x20

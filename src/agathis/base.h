@@ -69,4 +69,6 @@ float ag_get_I5_NOM(void);
 
 float ag_get_I3_NOM(void);
 
+void ag_id_external(void);
+
 #endif /* AGATHIS_6PLS6RVRFVYEP7NX */
