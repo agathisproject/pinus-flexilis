@@ -86,10 +86,26 @@ static void ag_rx_cback(union sigval sv) {
         if ((mac_dst[1] == mac_lcl[1]) && (mac_dst[0] == mac_lcl[0])) {
             //printf("DBG RX@%d msg from %06x:%06x\n", SIM_STATE.id, mac_src[1], mac_src[0]);
             if ((buff[12] == AG_PROTO_VER1) && (buff[13] == AG_PKT_TYPE_CMD)) {
-                if (buff[14] == AG_CMD_ID) {
-                    ag_id_external();
-                } else if (buff[14] == AG_CMD_RESET) {
-                    ag_reset();
+                switch (buff[14]) {
+                    case AG_CMD_ID: {
+                        ag_id_external();
+                        break;
+                    }
+                    case AG_CMD_RESET: {
+                        ag_reset();
+                        break;
+                    }
+                    case AG_CMD_POWER_OFF: {
+                        ag_brd_pwr_off();
+                        break;
+                    }
+                    case AG_CMD_POWER_ON: {
+                        ag_brd_pwr_on();
+                        break;
+                    }
+                    default: {
+                        break;
+                    }
                 }
             }
         }
@@ -162,11 +178,11 @@ int ag_comm_tx(uint32_t dst_mac1, uint32_t dst_mac0, uint8_t *buff,
         send_data[4] = (char) (dst_mac1 >> 8);
         send_data[5] = (char) (dst_mac1 >> 16);
         stor_get_MAC(mac);
-        for (int i = 6; i < 12; i++) {
-            send_data[i] = (char) mac[i - 6];
+        for (int i = 0; i < 6; i++) {
+            send_data[i + 6] = (char) mac[i];
         }
-        for (int i = 12; i < (nb + 12); i++) {
-            send_data[i] = (char) buff[i - 12];
+        for (int i = 0; i < nb; i++) {
+            send_data[i + 12] = (char) buff[i];
         }
         if (mq_send(queue, (const char *) send_data, nb, 0) == -1) {
             perror("CANNOT send msg");

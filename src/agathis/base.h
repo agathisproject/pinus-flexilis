@@ -65,10 +65,14 @@ void ag_reset(void);
 
 void ag_init(void);
 
+void ag_id_external(void);
+
+void ag_brd_pwr_off(void);
+
+void ag_brd_pwr_on(void);
+
 float ag_get_I5_NOM(void);
 
 float ag_get_I3_NOM(void);
-
-void ag_id_external(void);
 
 #endif /* AGATHIS_6PLS6RVRFVYEP7NX */

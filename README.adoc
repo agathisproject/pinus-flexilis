@@ -21,7 +21,7 @@ make
 
 To exit CTRL+C
 
-You can open multiple instances of the program and they will start communicating between them to simlate wireless connection.
+You can open multiple instances of the program and they will start communicating between them to simulate wireless connection.
 
 == Links
 

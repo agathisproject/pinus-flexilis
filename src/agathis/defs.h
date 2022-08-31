@@ -18,6 +18,8 @@ typedef enum {
 
 #define AG_CMD_ID           0x01
 #define AG_CMD_RESET        0x02
+#define AG_CMD_POWER_ON     0x03
+#define AG_CMD_POWER_OFF    0x04
 
 #define AG_CMD_CAP           0x03
 #define AG_CMD_CAP_NB        4

@@ -134,6 +134,8 @@ void ag_reset(void) {
     wdt_enable(WDTO_15MS);
 #elif defined(__XC16__)
 
+#elif defined(__linux__)
+    printf("RESET !!!\n");
 #endif
 }
 
@@ -186,6 +188,18 @@ void ag_init(void) {
     MOD_STATE.last_err = AG_ERR_NONE;
 }
 
+void ag_id_external(void) {
+    printf("ID LED\n");
+}
+
+void ag_brd_pwr_off(void) {
+    printf("board POWER OFF\n");
+}
+
+void ag_brd_pwr_on(void) {
+    printf("board POWER ON\n");
+}
+
 float ag_get_I5_NOM(void) {
 #if defined(__AVR__)
     return 0.0f;
@@ -204,8 +218,4 @@ float ag_get_I3_NOM(void) {
 #else
     return getValue_random((MOD_STATE.i3_nom * 0.5f), 5);
 #endif
-}
-
-void ag_id_external(void) {
-    printf("DBG: ID !!!\n");
 }

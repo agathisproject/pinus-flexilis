@@ -61,10 +61,12 @@ static CLI_FOLDER_t p_f_root = {"", sizeof(p_cmd_root) / sizeof(p_cmd_root[0]), 
                                 NULL, NULL, NULL, NULL, NULL
                                };
 
-static CLI_CMD_t p_cmd_mod[2]  = {
+static CLI_CMD_t p_cmd_mod[5]  = {
     {"info", "", "show modules", &cmd_mod_info},
     {"id", "", "identify module", &cmd_mod_id},
     {"reset", "", "reset module", &cmd_mod_reset},
+    {"on", "", "power on module", &cmd_mod_power_on},
+    {"off", "", "power off module", &cmd_mod_power_off},
 };
 static CLI_FOLDER_t p_f_mod = {"mod", sizeof(p_cmd_mod) / sizeof(p_cmd_mod[0]), p_cmd_mod,
                                &p_cmd_mod[0], NULL, NULL, NULL, NULL

@@ -16,6 +16,8 @@ CLI_CMD_RETURN_t cmd_save(CLI_PARSED_CMD_t *cmdp);
 CLI_CMD_RETURN_t cmd_mod_info(CLI_PARSED_CMD_t *cmdp);
 CLI_CMD_RETURN_t cmd_mod_id(CLI_PARSED_CMD_t *cmdp);
 CLI_CMD_RETURN_t cmd_mod_reset(CLI_PARSED_CMD_t *cmdp);
+CLI_CMD_RETURN_t cmd_mod_power_on(CLI_PARSED_CMD_t *cmdp);
+CLI_CMD_RETURN_t cmd_mod_power_off(CLI_PARSED_CMD_t *cmdp);
 #if MOD_HAS_PWR
 CLI_CMD_RETURN_t cmd_pwr_stats(CLI_PARSED_CMD_t *cmdp);
 CLI_CMD_RETURN_t cmd_pwr_ctrl(CLI_PARSED_CMD_t *cmdp);
