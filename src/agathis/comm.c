@@ -25,18 +25,41 @@
 #include "../hw/storage.h"
 #include "../platform/platform.h"
 
-#if defined(__AVR__)
-void ag_rx_cback(void) {
+static AG_FRAME_L0 p_tx_frame = {{0, 0}, {0, 0}, 0, (AG_FRAME_LEN - 12), NULL};
+static AG_FRAME_L0 p_rx_frame = {{0, 0}, {0, 0}, 0, (AG_FRAME_LEN - 12), NULL};
 
+int ag_comm_is_frame_bcast(AG_FRAME_L0 *frame) {
+    if ((frame->dst_mac[1] == 0x00FFFFFF) && (frame->dst_mac[0] == 0x00FFFFFF))
+        return 1;
+    return 0;
 }
-#elif defined(__XC16__)
-void ag_rx_cback(void) {
 
+int ag_comm_is_frame_for_me(AG_FRAME_L0 *frame) {
+    uint32_t mac_lcl[2];
+
+    stor_get_MAC_compact(mac_lcl);
+
+    if ((frame->dst_mac[1] == mac_lcl[1]) && (frame->dst_mac[0] == mac_lcl[0]))
+        return 1;
+    return 0;
 }
-#elif defined(__linux__)
+
+int ag_comm_is_frame_master(AG_FRAME_L0 *frame) {
+    for (int i = 0; i < AG_MC_MAX_CNT; i++) {
+        if ((REMOTE_MODS[i].mac[1] == frame->src_mac[1])
+                && (REMOTE_MODS[i].mac[0] == frame->src_mac[0])) {
+            if ((REMOTE_MODS[i].caps & AG_CAP_SW_TMC) != 0) {
+                return 1;
+            }
+        }
+    }
+    return 0;
+}
+
+#if defined(__linux__)
 static void p_mq_notify(void);
 
-static void ag_rx_cback(union sigval sv) {
+static void p_mq_rx(union sigval sv) {
     mqd_t mq_des = *((mqd_t *) sv.sival_ptr);
     struct mq_attr attr;
 
@@ -64,29 +87,62 @@ static void ag_rx_cback(union sigval sv) {
     //printf("DBG RX@%d %zd bytes\n", SIM_STATE.id, nb_rx);
     //printf("DBG RX@%d dst: %02x:%02x:%02x:%02x:%02x:%02x\n", SIM_STATE.id, buff[5], buff[4], buff[3], buff[2], buff[1], buff[0]);
     //printf("DBG RX@%d src: %02x:%02x:%02x:%02x:%02x:%02x\n", SIM_STATE.id, buff[11], buff[10], buff[9], buff[8], buff[7], buff[6]);
-    if (nb_rx == AG_MSG_LEN) {
-        uint32_t mac_dst[2];
-        uint32_t mac_src[2];
-        uint32_t mac_lcl[2];
-        uint8_t mac[6];
+    if (nb_rx != AG_FRAME_LEN) {
+        printf("INCORRECT number of bytes RX\n");
+        free(buff);
+        p_mq_notify();
+        return;
+    }
 
-        stor_get_MAC(mac);
-        mac_dst[1] = ((uint32_t) buff[5] << 16) | ((uint32_t) buff[4] << 8) | buff[3];
-        mac_dst[0] = ((uint32_t) buff[2] << 16) | ((uint32_t) buff[1] << 8) | buff[0];
-        mac_src[1] = ((uint32_t) buff[11] << 16) | ((uint32_t) buff[10] << 8) | buff[9];
-        mac_src[0] = ((uint32_t) buff[8] << 16) | ((uint32_t) buff[7] << 8) | buff[6];
-        mac_lcl[1] = ((uint32_t) mac[5] << 16) | ((uint32_t) mac[4] << 8) | mac[3];
-        mac_lcl[0] = ((uint32_t) mac[2] << 16) | ((uint32_t) mac[1] << 8) | mac[0];
-        if ((mac_dst[1] == 0x00FFFFFF) && (mac_dst[0] == 0x00FFFFFF)) {
-            //printf("DBG RX@%d brcst from %06x:%06x\n", SIM_STATE.id, mac_src[1], mac_src[0]);
-            if ((buff[12] == AG_PROTO_VER1) && (buff[13] == AG_PKT_TYPE_STATUS)) {
-                ag_add_remote_mod(mac_src, buff[12 + 4]);
-            }
+    p_rx_frame.dst_mac[1] = ((uint32_t) buff[5] << 16) | ((uint32_t) buff[4] << 8) |
+                            buff[3];
+    p_rx_frame.dst_mac[0] = ((uint32_t) buff[2] << 16) | ((uint32_t) buff[1] << 8) |
+                            buff[0];
+    p_rx_frame.src_mac[1] = ((uint32_t) buff[11] << 16) | ((
+                                uint32_t) buff[10] << 8) | buff[9];
+    p_rx_frame.src_mac[0] = ((uint32_t) buff[8] << 16) | ((uint32_t) buff[7] << 8) |
+                            buff[6];
+
+    memset(p_rx_frame.data, 0, p_rx_frame.nb * sizeof (uint8_t));
+    for (int i = 0; i < p_rx_frame.nb; i++) {
+        p_rx_frame.data[i] = buff[i + 12];
+    }
+    p_rx_frame.flags |= AG_FRAME_FLAG_VALID;
+
+    free(buff);
+    p_mq_notify();
+}
+
+static void p_mq_notify(void) {
+    struct sigevent sev;
+
+    sev.sigev_notify = SIGEV_THREAD;
+    sev.sigev_notify_function = p_mq_rx;
+    sev.sigev_notify_attributes = NULL;
+    sev.sigev_value.sival_ptr = &(SIM_STATE.msg_queue);
+    if (mq_notify(SIM_STATE.msg_queue, &sev) == -1) {
+        perror("mq_notify");
+        exit(EXIT_FAILURE);
+    }
+}
+#endif
+
+static void ag_comm_rx_cback(AG_FRAME_L0 *frame) {
+    if (ag_comm_is_frame_bcast(frame)) {
+        //printf("DBG RX@%d brcst from %06x:%06x\n", SIM_STATE.id, frame->src_mac[1], frame->src_mac[0]);
+        if ((frame->data[0] == AG_PROTO_VER1)
+                && (frame->data[1] == AG_PKT_TYPE_STATUS)) {
+            ag_add_remote_mod(frame->src_mac, frame->data[4]);
         }
-        if ((mac_dst[1] == mac_lcl[1]) && (mac_dst[0] == mac_lcl[0])) {
-            //printf("DBG RX@%d msg from %06x:%06x\n", SIM_STATE.id, mac_src[1], mac_src[0]);
-            if ((buff[12] == AG_PROTO_VER1) && (buff[13] == AG_PKT_TYPE_CMD)) {
-                switch (buff[14]) {
+    }
+
+    if (ag_comm_is_frame_for_me(frame) ) {
+        //printf("DBG RX@%d msg from %06x:%06x\n", SIM_STATE.id, frame->src_mac[1], frame->src_mac[0]);
+        if (ag_comm_is_frame_master(frame)) {
+            //printf("DBG RX@%d msg from master\n", SIM_STATE.id);
+            if ((frame->data[0] == AG_PROTO_VER1) && (frame->data[1] == AG_PKT_TYPE_CMD)) {
+                //printf("DBG RX@%d cmd from master %d\n", SIM_STATE.id, frame->data[2]);
+                switch (frame->data[2]) {
                     case AG_CMD_ID: {
                         ag_id_external();
                         break;
@@ -109,37 +165,23 @@ static void ag_rx_cback(union sigval sv) {
                 }
             }
         }
-    } else {
-        printf("INCORRECT number of bytes RX\n");
     }
-    free(buff);
-    p_mq_notify();
+    frame->flags &= (uint8_t) ~AG_FRAME_FLAG_VALID;
 }
 
-static void p_mq_notify(void) {
-    struct sigevent sev;
-
-    sev.sigev_notify = SIGEV_THREAD;
-    sev.sigev_notify_function = ag_rx_cback;
-    sev.sigev_notify_attributes = NULL;
-    sev.sigev_value.sival_ptr = &(SIM_STATE.msg_queue);
-    if (mq_notify(SIM_STATE.msg_queue, &sev) == -1) {
-        perror("mq_notify");
-        exit(EXIT_FAILURE);
+int ag_comm_tx(AG_FRAME_L0 *frame) {
+    if ((frame->flags & AG_FRAME_FLAG_VALID) == 0) {
+        //printf("%s - INVALID frame\n", __func__);
+        return -1;
     }
-}
-#endif
 
-int ag_comm_tx(uint32_t dst_mac1, uint32_t dst_mac0, uint8_t *buff,
-               uint8_t nb) {
 #if defined(__linux__)
     char mq_name[SIM_PATH_LEN] = "";
     char dst_name[SIM_PATH_LEN] = "";
-    uint8_t mac[6];
-    char *send_data = (char *) malloc((nb + 12) * sizeof(char));
+    char *send_data = (char *) malloc(AG_FRAME_LEN * sizeof(char));
 
     if (send_data == NULL) {
-        printf("%s\n", "CANNOT malloc");
+        printf("%s - CANNOT malloc\n", __func__);
         exit(EXIT_FAILURE);
     }
 
@@ -171,20 +213,24 @@ int ag_comm_tx(uint32_t dst_mac1, uint32_t dst_mac0, uint8_t *buff,
         }
 
         //printf("DBG TX@%d to %s\n", SIM_STATE.id, dst_name);
-        send_data[0] = (char) (dst_mac0 & 0xFF);
-        send_data[1] = (char) (dst_mac0 >> 8);
-        send_data[2] = (char) (dst_mac0 >> 16);
-        send_data[3] = (char) (dst_mac1 & 0xFF);
-        send_data[4] = (char) (dst_mac1 >> 8);
-        send_data[5] = (char) (dst_mac1 >> 16);
-        stor_get_MAC(mac);
-        for (int i = 0; i < 6; i++) {
-            send_data[i + 6] = (char) mac[i];
+        send_data[0] = (char) (frame->dst_mac[0] & 0xFF);
+        send_data[1] = (char) (frame->dst_mac[0] >> 8);
+        send_data[2] = (char) (frame->dst_mac[0] >> 16);
+        send_data[3] = (char) (frame->dst_mac[1] & 0xFF);
+        send_data[4] = (char) (frame->dst_mac[1] >> 8);
+        send_data[5] = (char) (frame->dst_mac[1] >> 16);
+
+        send_data[6] = (char) (frame->src_mac[0] & 0xFF);
+        send_data[7] = (char) (frame->src_mac[0] >> 8);
+        send_data[8] = (char) (frame->src_mac[0] >> 16);
+        send_data[9] = (char) (frame->src_mac[1] & 0xFF);
+        send_data[10] = (char) (frame->src_mac[1] >> 8);
+        send_data[11] = (char) (frame->src_mac[1] >> 16);
+
+        for (int i = 0; i < frame->nb; i++) {
+            send_data[i + 12] = (char) frame->data[i];
         }
-        for (int i = 0; i < nb; i++) {
-            send_data[i + 12] = (char) buff[i];
-        }
-        if (mq_send(queue, (const char *) send_data, nb, 0) == -1) {
+        if (mq_send(queue, (const char *) send_data, AG_FRAME_LEN, 0) == -1) {
             perror("CANNOT send msg");
             continue;
         }
@@ -193,11 +239,39 @@ int ag_comm_tx(uint32_t dst_mac1, uint32_t dst_mac0, uint8_t *buff,
     }
     closedir(d);
     free(send_data);
-    return 0;
 #endif
+
+    frame->flags &= (uint8_t) ~AG_FRAME_FLAG_VALID;
+    return 0;
+}
+
+AG_FRAME_L0 *ag_comm_get_tx_frame(void) {
+    uint32_t my_mac[2];
+
+    if ((p_tx_frame.flags & AG_FRAME_FLAG_VALID) != 0) {
+        return NULL;
+    }
+
+    stor_get_MAC_compact(my_mac);
+    p_tx_frame.src_mac[0] = my_mac[0];
+    p_tx_frame.src_mac[1] = my_mac[1];
+    memset(p_tx_frame.data, 0, p_tx_frame.nb * sizeof (uint8_t));
+    return &p_tx_frame;
 }
 
 void ag_comm_init(void) {
+    p_tx_frame.data = (uint8_t *) malloc((size_t) p_tx_frame.nb);
+    if (p_tx_frame.data == NULL) {
+        printf("CANNOT allocate TX buffer\n");
+        return;
+    }
+
+    p_rx_frame.data = (uint8_t *) malloc((size_t) p_rx_frame.nb);
+    if (p_rx_frame.data == NULL) {
+        printf("CANNOT allocate RX buffer\n");
+        return;
+    }
+
 #if defined(__linux)
     p_mq_notify();
 #endif
@@ -210,18 +284,24 @@ void ag_comm_main(void) {
 
 #elif defined(__linux__)
     time_t ts_now = time(NULL);
-    uint8_t buff[AG_MSG_LEN];
-
     if ((ts_now % 5) == 0) {
-        memset(buff, 0, AG_MSG_LEN * sizeof (uint8_t));
-        buff[0] = AG_PROTO_VER1;
-        buff[1] = AG_PKT_TYPE_STATUS;
-        buff[4] = MOD_STATE.caps_sw;
-        ag_comm_tx(0x00FFFFFF, 0x00FFFFFF, buff, AG_MSG_LEN);
+        AG_FRAME_L0 *frame = ag_comm_get_tx_frame();
+        frame->dst_mac[0] = 0x00FFFFFF;
+        frame->dst_mac[1] = 0x00FFFFFF;
+        frame->data[0] = AG_PROTO_VER1;
+        frame->data[1] = AG_PKT_TYPE_STATUS;
+        frame->data[4] = MOD_STATE.caps_sw;
+        frame->flags |= AG_FRAME_FLAG_VALID;
+        ag_comm_tx(frame);
     }
 
     sleep(1);
+
     ag_upd_remote_mods();
     ag_upd_alarm();
+
+    if ((p_rx_frame.flags & AG_FRAME_FLAG_VALID) != 0) {
+        ag_comm_rx_cback(&p_rx_frame);
+    }
 #endif
 }

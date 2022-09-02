@@ -31,7 +31,10 @@ Change the command hierarchy level (path)
 The commands are organized in the following levels:
 
   * (root) - commands for the local MC
-  * tfun - commands for local devices
+    ** <<cmd_root_info>>
+    ** <<cmd_root_set>>
+    ** <<cmd_root_save>>
+  * lcl - commands for local devices
     ** pwr
     ** clk
     ** pps
@@ -39,9 +42,15 @@ The commands are organized in the following levels:
     ** usb
     ** pcie
   * mod - commands for other MCs
+    ** <<cmd_mod_info>>
+    ** <<cmd_mod_id>>
+    ** <<cmd_mod_reset>>
+    ** <<cmd_mod_on>>
+    ** <<cmd_mod_off>>
 
 == root Commands
 
+[#cmd_root_info]
 === info
 
 Shows information about the module:
@@ -50,10 +59,7 @@ Shows information about the module:
   * alarms
   * manufacturer name / PN / SN
 
-=== dev
-
-Shows devices that are detected in the network.
-
+[#cmd_root_set]
 === set
 
 Sets configuration options on the module.
@@ -62,26 +68,38 @@ Sets configuration options on the module.
   ** *on* sets the current module as master
   ** *anything else than on* sets the current module as
 
+[#cmd_root_save]
 === save
 
 Save configuration.
 
 == mod Commands
 
+[#cmd_mod_info]
 === info
 
-Shows information about the other  modules in the system:
+Shows information about the other modules in the system:
 
 * id (for local use)
 * identifier (MAC)
 * number of seconds since last seen
 
-== set
+[#cmd_mod_id]
+=== id
 
-Sets configuration options on a remote module.
+Identifies the remote MC. Usually this is done by blinking a LED.
 
-*This is allowed only if the command is sent from the master module and there is only one master in the network*
+[#cmd_mod_reset]
+=== reset
 
-  * set *<id>* led [on|off]
-  ** *on* turns on the LED on the puppet module *<id>*
-  ** *anything else than on* turns off the LED on the puppet module *<id>*
+Resets the remote MC.
+
+[#cmd_mod_on]
+=== on
+
+Powers on the remote MC.
+
+[#cmd_mod_off]
+=== off
+
+Powers off the remote MC.

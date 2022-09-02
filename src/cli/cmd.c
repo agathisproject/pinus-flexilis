@@ -26,16 +26,6 @@ CLI_CMD_RETURN_t cmd_info(CLI_PARSED_CMD_t *cmdp) {
     return CMD_DONE;
 }
 
-CLI_CMD_RETURN_t cmd_dev(CLI_PARSED_CMD_t *cmdp) {
-    if (cmdp->nParams != 0) {
-        return CMD_WRONG_N;
-    }
-
-    printf("dev1\n");
-    printf("dev2\n");
-    return CMD_DONE;
-}
-
 CLI_CMD_RETURN_t cmd_set(CLI_PARSED_CMD_t *cmdp) {
     if (cmdp->nParams != 2) {
         return CMD_WRONG_N;
@@ -62,7 +52,7 @@ CLI_CMD_RETURN_t cmd_mod_info(CLI_PARSED_CMD_t *cmdp) {
         return CMD_WRONG_N;
     }
 
-    for (int i = 0; i < MC_MAX_CNT; i ++) {
+    for (int i = 0; i < AG_MC_MAX_CNT; i ++) {
         if (REMOTE_MODS[i].last_seen == -1) {
             continue;
         }
@@ -85,7 +75,7 @@ CLI_CMD_RETURN_t cmd_mod_id(CLI_PARSED_CMD_t *cmdp) {
     }
 
     uint8_t mc_id = (uint8_t) strtol(cmdp->params[0], NULL, 10);
-    if (mc_id >= MC_MAX_CNT) {
+    if (mc_id >= AG_MC_MAX_CNT) {
         printf("INCORRECT id\n");
         return CMD_DONE;
     }
@@ -94,13 +84,19 @@ CLI_CMD_RETURN_t cmd_mod_id(CLI_PARSED_CMD_t *cmdp) {
         return CMD_DONE;
     }
 
-    uint8_t buff[AG_MSG_LEN];
-    memset(buff, 0, AG_MSG_LEN * sizeof (uint8_t));
-    buff[0] = AG_PROTO_VER1;
-    buff[1] = AG_PKT_TYPE_CMD;
-    buff[2] = AG_CMD_ID;
-    ag_comm_tx(REMOTE_MODS[mc_id].mac[1], REMOTE_MODS[mc_id].mac[0], buff,
-               AG_MSG_LEN);
+    AG_FRAME_L0 *frame = ag_comm_get_tx_frame();
+    if (frame == NULL) {
+        printf("%s - CANNOT get TX frame\n", __func__);
+        return CMD_DONE;
+    }
+
+    frame->dst_mac[1] = REMOTE_MODS[mc_id].mac[1];
+    frame->dst_mac[0] = REMOTE_MODS[mc_id].mac[0];
+    frame->data[0] = AG_PROTO_VER1;
+    frame->data[1] = AG_PKT_TYPE_CMD;
+    frame->data[2] = AG_CMD_ID;
+    frame->flags |= AG_FRAME_FLAG_VALID;
+    ag_comm_tx(frame);
     return CMD_DONE;
 }
 
@@ -110,7 +106,7 @@ CLI_CMD_RETURN_t cmd_mod_reset(CLI_PARSED_CMD_t *cmdp) {
     }
 
     uint8_t mc_id = (uint8_t) strtol(cmdp->params[0], NULL, 10);
-    if (mc_id >= MC_MAX_CNT) {
+    if (mc_id >= AG_MC_MAX_CNT) {
         printf("INCORRECT id\n");
         return CMD_DONE;
     }
@@ -119,13 +115,19 @@ CLI_CMD_RETURN_t cmd_mod_reset(CLI_PARSED_CMD_t *cmdp) {
         return CMD_DONE;
     }
 
-    uint8_t buff[AG_MSG_LEN];
-    memset(buff, 0, AG_MSG_LEN * sizeof (uint8_t));
-    buff[0] = AG_PROTO_VER1;
-    buff[1] = AG_PKT_TYPE_CMD;
-    buff[2] = AG_CMD_RESET;
-    ag_comm_tx(REMOTE_MODS[mc_id].mac[1], REMOTE_MODS[mc_id].mac[0], buff,
-               AG_MSG_LEN);
+    AG_FRAME_L0 *frame = ag_comm_get_tx_frame();
+    if (frame == NULL) {
+        printf("%s - CANNOT get TX frame\n", __func__);
+        return CMD_DONE;
+    }
+
+    frame->dst_mac[1] = REMOTE_MODS[mc_id].mac[1];
+    frame->dst_mac[0] = REMOTE_MODS[mc_id].mac[0];
+    frame->data[0] = AG_PROTO_VER1;
+    frame->data[1] = AG_PKT_TYPE_CMD;
+    frame->data[2] = AG_CMD_RESET;
+    frame->flags |= AG_FRAME_FLAG_VALID;
+    ag_comm_tx(frame);
     return CMD_DONE;
 }
 
@@ -135,7 +137,7 @@ CLI_CMD_RETURN_t cmd_mod_power_on(CLI_PARSED_CMD_t *cmdp) {
     }
 
     uint8_t mc_id = (uint8_t) strtol(cmdp->params[0], NULL, 10);
-    if (mc_id >= MC_MAX_CNT) {
+    if (mc_id >= AG_MC_MAX_CNT) {
         printf("INCORRECT id\n");
         return CMD_DONE;
     }
@@ -144,13 +146,19 @@ CLI_CMD_RETURN_t cmd_mod_power_on(CLI_PARSED_CMD_t *cmdp) {
         return CMD_DONE;
     }
 
-    uint8_t buff[AG_MSG_LEN];
-    memset(buff, 0, AG_MSG_LEN * sizeof (uint8_t));
-    buff[0] = AG_PROTO_VER1;
-    buff[1] = AG_PKT_TYPE_CMD;
-    buff[2] = AG_CMD_POWER_ON;
-    ag_comm_tx(REMOTE_MODS[mc_id].mac[1], REMOTE_MODS[mc_id].mac[0], buff,
-               AG_MSG_LEN);
+    AG_FRAME_L0 *frame = ag_comm_get_tx_frame();
+    if (frame == NULL) {
+        printf("%s - CANNOT get TX frame\n", __func__);
+        return CMD_DONE;
+    }
+
+    frame->dst_mac[1] = REMOTE_MODS[mc_id].mac[1];
+    frame->dst_mac[0] = REMOTE_MODS[mc_id].mac[0];
+    frame->data[0] = AG_PROTO_VER1;
+    frame->data[1] = AG_PKT_TYPE_CMD;
+    frame->data[2] = AG_CMD_POWER_ON;
+    frame->flags |= AG_FRAME_FLAG_VALID;
+    ag_comm_tx(frame);
     return CMD_DONE;
 }
 
@@ -160,7 +168,7 @@ CLI_CMD_RETURN_t cmd_mod_power_off(CLI_PARSED_CMD_t *cmdp) {
     }
 
     uint8_t mc_id = (uint8_t) strtol(cmdp->params[0], NULL, 10);
-    if (mc_id >= MC_MAX_CNT) {
+    if (mc_id >= AG_MC_MAX_CNT) {
         printf("INCORRECT id\n");
         return CMD_DONE;
     }
@@ -169,13 +177,19 @@ CLI_CMD_RETURN_t cmd_mod_power_off(CLI_PARSED_CMD_t *cmdp) {
         return CMD_DONE;
     }
 
-    uint8_t buff[AG_MSG_LEN];
-    memset(buff, 0, AG_MSG_LEN * sizeof (uint8_t));
-    buff[0] = AG_PROTO_VER1;
-    buff[1] = AG_PKT_TYPE_CMD;
-    buff[2] = AG_CMD_POWER_OFF;
-    ag_comm_tx(REMOTE_MODS[mc_id].mac[1], REMOTE_MODS[mc_id].mac[0], buff,
-               AG_MSG_LEN);
+    AG_FRAME_L0 *frame = ag_comm_get_tx_frame();
+    if (frame == NULL) {
+        printf("%s - CANNOT get TX frame\n", __func__);
+        return CMD_DONE;
+    }
+
+    frame->dst_mac[1] = REMOTE_MODS[mc_id].mac[1];
+    frame->dst_mac[0] = REMOTE_MODS[mc_id].mac[0];
+    frame->data[0] = AG_PROTO_VER1;
+    frame->data[1] = AG_PKT_TYPE_CMD;
+    frame->data[2] = AG_CMD_POWER_OFF;
+    frame->flags |= AG_FRAME_FLAG_VALID;
+    ag_comm_tx(frame);
     return CMD_DONE;
 }
 

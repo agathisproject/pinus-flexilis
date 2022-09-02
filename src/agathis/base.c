@@ -23,7 +23,7 @@ AG_MC_STATE_t MOD_STATE = {.caps_hw_ext = 0, .caps_hw_int = 0, .caps_sw = 0,
                            .i5_nom = 0.1f,  .i5_cutoff = 0.12f, .i3_nom = 1.0f, .i3_cutoff = 1.5f,
                           };
 
-AG_RMT_MC_STATE_t REMOTE_MODS[MC_MAX_CNT] = {
+AG_RMT_MC_STATE_t REMOTE_MODS[AG_MC_MAX_CNT] = {
     {.mac = {0, 0}, .caps = 0, .last_err = 0, .last_seen = -1},
     {.mac = {0, 0}, .caps = 0, .last_err = 0, .last_seen = -1},
     {.mac = {0, 0}, .caps = 0, .last_err = 0, .last_seen = -1},
@@ -73,7 +73,7 @@ void p_gpio_addr_u(uint8_t addr) {
 
 void ag_add_remote_mod(const uint32_t *mac, uint8_t caps) {
     int idx_free = -1;
-    for (int i = 0 ; i < MC_MAX_CNT; i ++) {
+    for (int i = 0 ; i < AG_MC_MAX_CNT; i ++) {
         if ((REMOTE_MODS[i].last_seen == -1) && (idx_free == -1)) {
             idx_free = i;
         }
@@ -95,11 +95,11 @@ void ag_add_remote_mod(const uint32_t *mac, uint8_t caps) {
 }
 
 void ag_upd_remote_mods(void) {
-    for (int i = 0 ; i < MC_MAX_CNT; i ++) {
+    for (int i = 0 ; i < AG_MC_MAX_CNT; i ++) {
         if (REMOTE_MODS[i].last_seen == -1) {
             continue;
         }
-        if (REMOTE_MODS[i].last_seen > MC_MAX_AGE) {
+        if (REMOTE_MODS[i].last_seen > AG_MC_MAX_AGE) {
             REMOTE_MODS[i].mac[0] = 0;
             REMOTE_MODS[i].mac[1] = 0;
             REMOTE_MODS[i].caps = 0;
@@ -113,7 +113,7 @@ void ag_upd_remote_mods(void) {
 
 void ag_upd_alarm(void) {
     int nm = 0;
-    for (int i = 0 ; i < MC_MAX_CNT; i ++) {
+    for (int i = 0 ; i < AG_MC_MAX_CNT; i ++) {
         if ((REMOTE_MODS[i].caps & AG_CAP_SW_TMC) != 0) {
             nm += 1;
         }
@@ -169,7 +169,7 @@ void ag_init(void) {
 //        MOD_STATE.caps_hw_ext |= AG_CAP_EXT_TMC;
 //        MOD_STATE.addr_u = (MOD_STATE.addr_d + 1);
 //        //MOD_STATE.addr_i2c = (I2C_OFFSET + 1); // TODO: for test, remove on release
-//    } else if (MOD_STATE.addr_d == (MC_MAX_CNT - 1)) {
+//    } else if (MOD_STATE.addr_d == (AG_MC_MAX_CNT - 1)) {
 //        MOD_STATE.caps_hw_ext |= AG_CAP_EXT_TMC;
 //        MOD_STATE.addr_u = 1;
 //    } else {

@@ -46,10 +46,10 @@ typedef struct {
     int8_t last_seen;
 } AG_RMT_MC_STATE_t;
 
-#define MC_MAX_CNT 16 /** max number of MCs in the chain, including the local one */
-#define MC_MAX_AGE 30
+#define AG_MC_MAX_CNT 16 /** max number of MCs in the chain, including the local one */
+#define AG_MC_MAX_AGE 30
 
-extern AG_RMT_MC_STATE_t REMOTE_MODS[MC_MAX_CNT];
+extern AG_RMT_MC_STATE_t REMOTE_MODS[AG_MC_MAX_CNT];
 
 void ag_add_remote_mod(const uint32_t *mac, uint8_t caps);
 

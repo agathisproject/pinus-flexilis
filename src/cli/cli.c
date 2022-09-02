@@ -51,9 +51,8 @@ void CLI_setPrompt(const char *str) {
     strncpy(p_CLI_PROMPT, str, CLI_PROMPT_SIZE);
 }
 
-static CLI_CMD_t p_cmd_root[4]  = {
+static CLI_CMD_t p_cmd_root[3]  = {
     {"info", "", "show module info", &cmd_info},
-    {"dev",  "", "show devices", &cmd_dev},
     {"set",  "", "change configuration", &cmd_set},
     {"save", "", "save configuration", &cmd_save},
 };
@@ -72,7 +71,7 @@ static CLI_FOLDER_t p_f_mod = {"mod", sizeof(p_cmd_mod) / sizeof(p_cmd_mod[0]), 
                                &p_cmd_mod[0], NULL, NULL, NULL, NULL
                               };
 
-static CLI_FOLDER_t p_f_tfun = {"tfun", 0, NULL, NULL, NULL, NULL, NULL, NULL};
+static CLI_FOLDER_t p_f_lcl = {"lcl", 0, NULL, NULL, NULL, NULL, NULL, NULL};
 
 #if MOD_HAS_PWR
 static CLI_CMD_t p_cmd_pwr[4]  = {
@@ -98,35 +97,35 @@ void CLI_init(void) {
     unsigned int i = 0;
 
     p_f_root.parent = &p_f_root;
-    p_f_root.child = &p_f_tfun;
+    p_f_root.child = &p_f_lcl;
 
-    p_f_tfun.parent = &p_f_root;
-    p_f_tfun.right = &p_f_mod;
-    p_f_tfun.child = &p_f_pwr;
+    p_f_lcl.parent = &p_f_root;
+    p_f_lcl.right = &p_f_mod;
+    p_f_lcl.child = &p_f_pwr;
 
     p_f_mod.parent = &p_f_root;
-    p_f_mod.left = &p_f_tfun;
+    p_f_mod.left = &p_f_lcl;
 
-    p_f_pwr.parent = &p_f_tfun;
+    p_f_pwr.parent = &p_f_lcl;
     p_f_pwr.right = &p_f_clk;
 
-    p_f_clk.parent = &p_f_tfun;
+    p_f_clk.parent = &p_f_lcl;
     p_f_clk.left = &p_f_pwr;
     p_f_clk.right = &p_f_pps;
 
-    p_f_pps.parent = &p_f_tfun;
+    p_f_pps.parent = &p_f_lcl;
     p_f_pps.left = &p_f_clk;
     p_f_pps.right = &p_f_jtag;
 
-    p_f_jtag.parent = &p_f_tfun;
+    p_f_jtag.parent = &p_f_lcl;
     p_f_jtag.left = &p_f_pps;
     p_f_jtag.right = &p_f_usb;
 
-    p_f_usb.parent = &p_f_tfun;
+    p_f_usb.parent = &p_f_lcl;
     p_f_usb.left = &p_f_jtag;
     p_f_usb.right = &p_f_pcie;
 
-    p_f_pcie.parent = &p_f_tfun;
+    p_f_pcie.parent = &p_f_lcl;
     p_f_pcie.left = &p_f_usb;
 
     for (i = 0; i < CLI_TREE_DEPTH_MAX; i++) {
