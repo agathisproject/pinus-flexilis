@@ -3,169 +3,178 @@
 #include "storage.h"
 
 #include <stdio.h>
-
-#if defined(__linux__)
+#include <string.h>
 #include <stdlib.h>
 
+#if defined(ESP_PLATFORM)
+#include "nvs_flash.h"
+#elif defined(__linux__)
 #include "../sim/state.h"
 #endif
 
 #include "../agathis/base.h"
 
-/**
- * @brief returns the MAC address
- * @param mac array of 6 * uint8_t
- */
-void stor_get_MAC(uint8_t *mac) {
-    for (int i = 0; i < 6; i++) {
-        mac[i] = SIM_STATE.mac[i];
-    }
-}
-
-/**
- * @brief returns the MAC address
- * @param mac array of 2 * uint32_t
- */
-void stor_get_MAC_compact(uint32_t *mac) {
-    mac[1] = ((uint32_t) SIM_STATE.mac[5] << 16) | ((uint32_t) SIM_STATE.mac[4] <<
-             8) | SIM_STATE.mac[3];
-    mac[0] = ((uint32_t) SIM_STATE.mac[2] << 16) | ((uint32_t) SIM_STATE.mac[1] <<
-             8) | SIM_STATE.mac[0];
-}
-
-static uint8_t p_get_eeprom_byte(uint16_t addr) {
-#if defined(__AVR__)
-    return 0xFF;
-#elif defined(__XC16__)
-    return 0xFF;
-#elif defined(__linux__)
-    const char *fName = SIM_STATE.eeprom_path;
-    FILE *fp;
-
-    fp = fopen(fName, "rb");
-    if (!fp) {
-        perror("CANNOT open file");
-        exit(EXIT_FAILURE);
-    }
-
-    fseek(fp, addr, SEEK_SET);
-    uint8_t tmp = (uint8_t) fgetc(fp);
-    fclose(fp);
-
-    return tmp;
+#if defined(ESP_PLATFORM)
+#define NVS_NAMESPACE "pinus"
+#define NVS_KEY "MOD_STATE"
 #endif
-}
-
-static void p_set_eeprom_byte(uint16_t addr, uint8_t data) {
-#if defined(__AVR__)
-
-#elif defined(__XC16__)
-
-#elif defined(__linux__)
-    const char *fName = SIM_STATE.eeprom_path;
-    FILE *fp;
-
-    fp = fopen(fName, "r+b");
-    if (!fp) {
-        perror("CANNOT open file");
-        exit(EXIT_FAILURE);
-    }
-
-    fseek(fp, addr, SEEK_SET);
-    fputc(data, fp);
-    fclose(fp);
-#endif
-}
-
-static void p_get_eeprom_str(uint16_t addr, uint8_t len, char *str) {
-#if defined(__AVR__)
-    memset(str, 0, len * sizeof(char) );
-#elif defined(__XC16__)
-    memset(str, 0, len * sizeof(char) );
-#elif defined(__linux__)
-    const char *fName = SIM_STATE.eeprom_path;
-    FILE *fp;
-
-    fp = fopen(fName, "rb");
-    if (!fp) {
-        perror("CANNOT open file");
-        exit(EXIT_FAILURE);
-    }
-
-    fseek(fp, addr, SEEK_SET);
-    for (unsigned int i = 0; i < len; i++) {
-        str[i] = (char) fgetc(fp);
-    }
-    str[len] = '\0';
-
-    fclose(fp);
-#endif
-}
-
-/**
- * read floating point value from EEPROM
- *
- * Reads a 16b value from EEPROM as a integer, then divide by 100
- * Possible values are between -327.68 and 327.67
- * @param addr
- * @param f
- * @return
- */
-static float p_get_eeprom_float(uint16_t addr) {
-#if defined(__AVR__)
-    return 0.0;
-#elif defined(__XC16__)
-    return 0.0;
-#elif defined(__linux__)
-    const char *fName = SIM_STATE.eeprom_path;
-    FILE *fp;
-
-    fp = fopen(fName, "rb");
-    if (!fp) {
-        perror("CANNOT open file");
-        exit(EXIT_FAILURE);
-    }
-
-    int16_t tmp = 0;
-    fseek(fp, addr, SEEK_SET);
-    tmp = (int16_t) fgetc(fp);
-    fseek(fp, (addr + 1), SEEK_SET);
-    tmp += (int16_t) (fgetc(fp) << 8);
-
-    fclose(fp);
-    return ((float) tmp / 100.0f);
-#endif
-}
 
 void stor_restore_state(void) {
-    uint8_t ver = p_get_eeprom_byte(0);
-    printf("%s EEPROM ver %d\n", PREFIX_MC, ver);
-    if (ver == 0xFF) {
+#if defined(ESP_PLATFORM)
+    nvs_handle_t hndl_nvs;
+    esp_err_t err;
+
+    err = nvs_open(NVS_NAMESPACE, NVS_READWRITE, &hndl_nvs);
+    if (err != ESP_OK) {
+        printf("E (%s) CANNOT nvs_open\n", __func__);
         return;
     }
 
-    uint8_t tmp = p_get_eeprom_byte(8);
-    if (tmp == 0xFF) {
-        MOD_STATE.caps_sw = 0x00;
-    } else {
-        MOD_STATE.caps_sw = tmp;
+    size_t bin_size = 0;
+    // check if something is saved
+    err = nvs_get_blob(hndl_nvs, NVS_KEY, NULL, &bin_size);
+    if (err != ESP_OK && err != ESP_ERR_NVS_NOT_FOUND) {
+        printf("E (%s) CANNOT get blob\n", __func__);
+        return;
     }
 
-    p_get_eeprom_str(16, 16, MOD_STATE.mfr_name);
-    p_get_eeprom_str(32, 16, MOD_STATE.mfr_pn);
-    p_get_eeprom_str(48, 16, MOD_STATE.mfr_sn);
+    if (bin_size == 0) {
+        printf("W (%s) NO state saved\n", __func__ );
+        return;
+    }
+    if (bin_size > AG_STORAGE_SIZE) {
+        printf("E (%s) saved state size TOO BIG\n", __func__);
+        return;
+    }
 
-    MOD_STATE.i5_nom = p_get_eeprom_float(64);
-    MOD_STATE.i5_cutoff = p_get_eeprom_float(66);
-    MOD_STATE.i3_nom = p_get_eeprom_float(68);
-    MOD_STATE.i3_cutoff = p_get_eeprom_float(70);
+    uint8_t *buff = (uint8_t *) malloc(bin_size * sizeof (uint8_t));
+    if (buff == NULL) {
+        printf("E (%s) CANNOT alloc buffer\n", __func__);
+        return;
+    }
+
+    err = nvs_get_blob(hndl_nvs, NVS_KEY, buff, &bin_size);
+    if (err != ESP_OK) {
+        printf("E (%s) CANNOT read state\n", __func__);
+        free(buff);
+        return;
+    }
+    if (MOD_STATE.ver != buff[0]) {
+        printf("W (%s) OLD state detected\n", __func__);
+        free(buff);
+        return;
+    }
+    memcpy(((uint8_t *) &MOD_STATE), buff, bin_size);
+    free(buff);
+    nvs_close(hndl_nvs);
+#else
+    uint8_t *buff = (uint8_t *) malloc(AG_STORAGE_SIZE * sizeof (uint8_t));
+
+    if (buff == NULL) {
+        printf("E (%s) CANNOT alloc buffer\n", __func__);
+        return;
+    }
+    memset(buff, 0, AG_STORAGE_SIZE);
+
+    const char *fName = SIM_STATE.eeprom_path;
+    FILE *fp;
+
+    fp = fopen(fName, "rb");
+    if (!fp) {
+        perror("CANNOT open file");
+        free(buff);
+        exit(EXIT_FAILURE);
+    }
+
+    size_t n_rd = fread(buff, sizeof (uint8_t), AG_STORAGE_SIZE, fp);
+    fclose(fp);
+    if (n_rd != AG_STORAGE_SIZE) {
+        printf("E (%s) INCORRECT file read\n", __func__);
+        free(buff);
+        return;
+    }
+
+    if (MOD_STATE.ver != buff[0]) {
+        printf("W (%s) OLD state detected\n", __func__);
+        free(buff);
+        return;
+    }
+    memcpy(((uint8_t *) &MOD_STATE), buff, (sizeof (MOD_STATE) / sizeof (uint8_t)));
+    free(buff);
+
+    MOD_STATE.mfr_name[15] = 0x00;
+    MOD_STATE.mfr_pn[15] = 0x00;
+    MOD_STATE.mfr_sn[15] = 0x00;
+#endif
+    printf("I (%d) state restored\n", __LINE__);
 }
 
 void stor_save_state(void) {
-    uint8_t ver = p_get_eeprom_byte(0);
-    printf("%s EEPROM ver %d\n", PREFIX_MC, ver);
-    if (ver == 0xFF) {
-        p_set_eeprom_byte(0, 0x1);
+    size_t state_size = sizeof (MOD_STATE) / sizeof (uint8_t);
+    if (state_size > AG_STORAGE_SIZE) {
+        printf("E (%s) state size TOO BIG\n", __func__);
+        return;
     }
-    p_set_eeprom_byte(8, MOD_STATE.caps_sw);
+#if defined(ESP_PLATFORM)
+    nvs_handle_t hndl_nvs;
+    esp_err_t err;
+
+    err = nvs_open(NVS_NAMESPACE, NVS_READWRITE, &hndl_nvs);
+    if (err != ESP_OK) {
+        printf("E (%s) CANNOT nvs_open\n", __func__);
+        return;
+    }
+
+    uint8_t *buff = (uint8_t *) malloc(AG_STORAGE_SIZE * sizeof (uint8_t));
+    if (buff == NULL) {
+        printf("E (%s) CANNOT alloc buffer\n", __func__);
+        return;
+    }
+
+    memset(buff, 0xFF, AG_STORAGE_SIZE);
+    memcpy(buff, ((uint8_t *) &MOD_STATE), state_size);
+    err = nvs_set_blob(hndl_nvs, NVS_KEY, buff, state_size);
+    if (err != ESP_OK) {
+        printf("E (%s) CANNOT save state\n", __func__);
+        return;
+        free(buff);
+    }
+    free(buff);
+    nvs_close(hndl_nvs);
+#elif (__linux__)
+    uint8_t *buff = (uint8_t *) malloc(AG_STORAGE_SIZE * sizeof (uint8_t));
+
+    if (buff == NULL) {
+        printf("E (%s) CANNOT alloc buffer\n", __func__);
+        return;
+    }
+    memset(buff, 0, AG_STORAGE_SIZE);
+    memcpy(buff, ((uint8_t *) &MOD_STATE), state_size);
+
+    const char *fName = SIM_STATE.eeprom_path;
+    FILE *fp;
+
+    fp = fopen(fName, "wb");
+    if (!fp) {
+        perror("CANNOT open file");
+        free(buff);
+        exit(EXIT_FAILURE);
+    }
+
+    size_t n_wr = fwrite(buff, sizeof (uint8_t), AG_STORAGE_SIZE, fp);
+    fflush(fp);
+    fclose(fp);
+    if (n_wr != AG_STORAGE_SIZE) {
+        printf("E (%s) INCORRECT file write\n", __func__);
+        free(buff);
+        return;
+    }
+
+    free(buff);
+#endif
+    printf("I (%d) state saved\n", __LINE__);
+}
+
+void stor_erase_state(void) {
+
 }

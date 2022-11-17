@@ -7,8 +7,14 @@
 #include <string.h>
 #include <time.h>
 
-#if defined(__AVR__)
-#include <avr/wdt.h>
+#if defined(ESP_PLATFORM)
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+
+#include "esp_log.h"
+#include "esp_mac.h"
+
+#include "../hw/platform_esp/espnow.h"
 #elif defined(__linux__)
 #include <dirent.h>
 #include <fcntl.h>
@@ -19,30 +25,11 @@
 #include "../sim/state.h"
 #endif
 
-#include "defs.h"
 #include "base.h"
-#include "../hw/gpio.h"
-#include "../hw/storage.h"
-#include "../platform/platform.h"
+#include "../hw/misc.h"
 
-static AG_FRAME_L0 p_tx_frame = {{0, 0}, {0, 0}, 0, (AG_FRAME_LEN - 12), NULL};
-static AG_FRAME_L0 p_rx_frame = {{0, 0}, {0, 0}, 0, (AG_FRAME_LEN - 12), NULL};
-
-int ag_comm_is_frame_bcast(AG_FRAME_L0 *frame) {
-    if ((frame->dst_mac[1] == 0x00FFFFFF) && (frame->dst_mac[0] == 0x00FFFFFF))
-        return 1;
-    return 0;
-}
-
-int ag_comm_is_frame_for_me(AG_FRAME_L0 *frame) {
-    uint32_t mac_lcl[2];
-
-    stor_get_MAC_compact(mac_lcl);
-
-    if ((frame->dst_mac[1] == mac_lcl[1]) && (frame->dst_mac[0] == mac_lcl[0]))
-        return 1;
-    return 0;
-}
+static AG_FRAME_L0 p_tx_frame = {{0, 0}, {0, 0}, 0, AG_FRAME_LEN, NULL};
+static AG_FRAME_L0 p_rx_frame = {{0, 0}, {0, 0}, 0, AG_FRAME_LEN, NULL};
 
 int ag_comm_is_frame_master(AG_FRAME_L0 *frame) {
     for (int i = 0; i < AG_MC_MAX_CNT; i++) {
@@ -56,7 +43,29 @@ int ag_comm_is_frame_master(AG_FRAME_L0 *frame) {
     return 0;
 }
 
-#if defined(__linux__)
+#if defined(ESP_PLATFORM)
+static void p_espnow_tx_cbk(const uint8_t *mac_addr,
+                            esp_now_send_status_t status) {
+    //char *appName = pcTaskGetName(NULL);
+    //ESP_LOGI(appName, "TX to "MACSTR" status %d", MAC2STR(mac_addr), status);
+}
+
+static void p_espnow_rx_cbk(const uint8_t *mac_addr, const uint8_t *data,
+                            int len) {
+    //char *appName = pcTaskGetName(NULL);
+    //ESP_LOGI(appName, "RX from "MACSTR" %d B", MAC2STR(mac_addr), len);
+    if (len > p_rx_frame.nb) {
+        printf("%s - frame TOO BIG\n", __func__);
+        return;
+    }
+
+    memset(p_rx_frame.data, 0, p_rx_frame.nb * sizeof (uint8_t));
+    memcpy(p_rx_frame.data, data, len * sizeof (uint8_t));
+    p_rx_frame.src_mac[1] = (mac_addr[0] << 16) | (mac_addr[1] << 8) | mac_addr[2];
+    p_rx_frame.src_mac[0] = (mac_addr[3] << 16) | (mac_addr[4] << 8) | mac_addr[5];
+    p_rx_frame.flags |= AG_FRAME_FLAG_VALID;
+}
+#elif defined(__linux__)
 static void p_mq_notify(void);
 
 static void p_mq_rx(union sigval sv) {
@@ -87,7 +96,7 @@ static void p_mq_rx(union sigval sv) {
     //printf("DBG RX@%d %zd bytes\n", SIM_STATE.id, nb_rx);
     //printf("DBG RX@%d dst: %02x:%02x:%02x:%02x:%02x:%02x\n", SIM_STATE.id, buff[5], buff[4], buff[3], buff[2], buff[1], buff[0]);
     //printf("DBG RX@%d src: %02x:%02x:%02x:%02x:%02x:%02x\n", SIM_STATE.id, buff[11], buff[10], buff[9], buff[8], buff[7], buff[6]);
-    if (nb_rx != AG_FRAME_LEN) {
+    if ((nb_rx - 12) != AG_FRAME_LEN) {
         printf("INCORRECT number of bytes RX\n");
         free(buff);
         p_mq_notify();
@@ -104,9 +113,11 @@ static void p_mq_rx(union sigval sv) {
                             buff[6];
 
     memset(p_rx_frame.data, 0, p_rx_frame.nb * sizeof (uint8_t));
-    for (int i = 0; i < p_rx_frame.nb; i++) {
-        p_rx_frame.data[i] = buff[i + 12];
-    }
+    memcpy(p_rx_frame.data, &buff[12],
+           (unsigned long) (nb_rx - 12) * sizeof (uint8_t));
+//    for (int i = 0; i < p_rx_frame.nb; i++) {
+//        p_rx_frame.data[i] = buff[i + 12];
+//    }
     p_rx_frame.flags |= AG_FRAME_FLAG_VALID;
 
     free(buff);
@@ -127,41 +138,36 @@ static void p_mq_notify(void) {
 }
 #endif
 
-static void ag_comm_rx_cback(AG_FRAME_L0 *frame) {
-    if (ag_comm_is_frame_bcast(frame)) {
-        //printf("DBG RX@%d brcst from %06x:%06x\n", SIM_STATE.id, frame->src_mac[1], frame->src_mac[0]);
-        if ((frame->data[0] == AG_PROTO_VER1)
-                && (frame->data[1] == AG_PKT_TYPE_STATUS)) {
-            ag_add_remote_mod(frame->src_mac, frame->data[4]);
-        }
+static void ag_comm_rx_process(AG_FRAME_L0 *frame) {
+//    printf("DBG %s: %d B from %06x:%06x\n", __func__, frame->nb,
+//           (unsigned int) frame->src_mac[1], (unsigned int) frame->src_mac[0]);
+    if (frame->data[1] == AG_PKT_TYPE_STATUS) {
+        ag_add_remote_mod(frame->src_mac, frame->data[4]);
     }
 
-    if (ag_comm_is_frame_for_me(frame) ) {
-        //printf("DBG RX@%d msg from %06x:%06x\n", SIM_STATE.id, frame->src_mac[1], frame->src_mac[0]);
-        if (ag_comm_is_frame_master(frame)) {
-            //printf("DBG RX@%d msg from master\n", SIM_STATE.id);
-            if ((frame->data[0] == AG_PROTO_VER1) && (frame->data[1] == AG_PKT_TYPE_CMD)) {
-                //printf("DBG RX@%d cmd from master %d\n", SIM_STATE.id, frame->data[2]);
-                switch (frame->data[2]) {
-                    case AG_CMD_ID: {
-                        ag_id_external();
-                        break;
-                    }
-                    case AG_CMD_RESET: {
-                        ag_reset();
-                        break;
-                    }
-                    case AG_CMD_POWER_OFF: {
-                        ag_brd_pwr_off();
-                        break;
-                    }
-                    case AG_CMD_POWER_ON: {
-                        ag_brd_pwr_on();
-                        break;
-                    }
-                    default: {
-                        break;
-                    }
+    if (ag_comm_is_frame_master(frame)) {
+        //printf("DBG RX@%d msg from master\n", SIM_STATE.id);
+        if ((frame->data[0] == AG_PROTO_VER1) && (frame->data[1] == AG_PKT_TYPE_CMD)) {
+            //printf("DBG RX@%d cmd from master %d\n", SIM_STATE.id, frame->data[2]);
+            switch (frame->data[2]) {
+                case AG_CMD_ID: {
+                    ag_id_external();
+                    break;
+                }
+                case AG_CMD_RESET: {
+                    ag_reset();
+                    break;
+                }
+                case AG_CMD_POWER_OFF: {
+                    ag_brd_pwr_off();
+                    break;
+                }
+                case AG_CMD_POWER_ON: {
+                    ag_brd_pwr_on();
+                    break;
+                }
+                default: {
+                    break;
                 }
             }
         }
@@ -175,10 +181,20 @@ int ag_comm_tx(AG_FRAME_L0 *frame) {
         return -1;
     }
 
-#if defined(__linux__)
+#if defined(ESP_PLATFORM)
+    if (frame->nb > ESP_NOW_MAX_DATA_LEN) {
+        //printf("%s - frame TOO BIG\n", __func__);
+        return -1;
+    }
+
+    uint8_t dst_mac[6] = {(uint8_t) (frame->dst_mac[1] >> 16), (uint8_t) (frame->dst_mac[1] >> 8), (uint8_t) (frame->dst_mac[1]),
+                          (uint8_t) (frame->dst_mac[0] >> 16), (uint8_t) (frame->dst_mac[0] >> 8), (uint8_t) (frame->dst_mac[0])
+                         };
+    espnow_tx(dst_mac, frame->data, frame->nb);
+#elif defined(__linux__)
     char mq_name[SIM_PATH_LEN] = "";
     char dst_name[SIM_PATH_LEN] = "";
-    char *send_data = (char *) malloc(AG_FRAME_LEN * sizeof(char));
+    char *send_data = (char *) malloc((AG_FRAME_LEN + 12) * sizeof(char));
 
     if (send_data == NULL) {
         printf("%s - CANNOT malloc\n", __func__);
@@ -230,7 +246,7 @@ int ag_comm_tx(AG_FRAME_L0 *frame) {
         for (int i = 0; i < frame->nb; i++) {
             send_data[i + 12] = (char) frame->data[i];
         }
-        if (mq_send(queue, (const char *) send_data, AG_FRAME_LEN, 0) == -1) {
+        if (mq_send(queue, (const char *) send_data, (AG_FRAME_LEN + 12), 0) == -1) {
             perror("CANNOT send msg");
             continue;
         }
@@ -240,7 +256,6 @@ int ag_comm_tx(AG_FRAME_L0 *frame) {
     closedir(d);
     free(send_data);
 #endif
-
     frame->flags &= (uint8_t) ~AG_FRAME_FLAG_VALID;
     return 0;
 }
@@ -248,14 +263,20 @@ int ag_comm_tx(AG_FRAME_L0 *frame) {
 AG_FRAME_L0 *ag_comm_get_tx_frame(void) {
     uint32_t my_mac[2];
 
-    if ((p_tx_frame.flags & AG_FRAME_FLAG_VALID) != 0) {
-        return NULL;
+    // if the frame is being transmitted, wait
+    while ((p_tx_frame.flags & AG_FRAME_FLAG_VALID) != 0) {
+#if defined(ESP_PLATFORM)
+        vTaskDelay(1 / portTICK_PERIOD_MS);
+#elif defined(__linux__)
+        usleep(1000);
+#endif
     }
 
-    stor_get_MAC_compact(my_mac);
+    get_HW_ID_compact(my_mac);
     p_tx_frame.src_mac[0] = my_mac[0];
     p_tx_frame.src_mac[1] = my_mac[1];
     memset(p_tx_frame.data, 0, p_tx_frame.nb * sizeof (uint8_t));
+    p_tx_frame.flags |= AG_FRAME_FLAG_VALID;
     return &p_tx_frame;
 }
 
@@ -272,16 +293,30 @@ void ag_comm_init(void) {
         return;
     }
 
-#if defined(__linux)
+#if defined(ESP_PLATFORM)
+    espnow_init();
+    espnow_set_tx_callback(p_espnow_tx_cbk);
+    espnow_set_rx_callback(p_espnow_rx_cbk);
+#elif defined(__linux)
     p_mq_notify();
 #endif
 }
 
 void ag_comm_main(void) {
-#if defined(__AVR__)
-
-#elif defined(__XC16__)
-
+#if defined(ESP_PLATFORM)
+    time_t ts_now = time(NULL);
+    if ((ts_now % 5) == 0) {
+        AG_FRAME_L0 *frame = ag_comm_get_tx_frame();
+        frame->dst_mac[0] = 0x00FFFFFF;
+        frame->dst_mac[1] = 0x00FFFFFF;
+        frame->data[0] = AG_PROTO_VER1;
+        frame->data[1] = AG_PKT_TYPE_STATUS;
+        frame->data[4] = MOD_STATE.caps_sw;
+        ag_comm_tx(frame);
+    }
+    if ((p_rx_frame.flags & AG_FRAME_FLAG_VALID) != 0) {
+        ag_comm_rx_process(&p_rx_frame);
+    }
 #elif defined(__linux__)
     time_t ts_now = time(NULL);
     if ((ts_now % 5) == 0) {
@@ -291,17 +326,10 @@ void ag_comm_main(void) {
         frame->data[0] = AG_PROTO_VER1;
         frame->data[1] = AG_PKT_TYPE_STATUS;
         frame->data[4] = MOD_STATE.caps_sw;
-        frame->flags |= AG_FRAME_FLAG_VALID;
         ag_comm_tx(frame);
     }
-
-    sleep(1);
-
-    ag_upd_remote_mods();
-    ag_upd_alarm();
-
     if ((p_rx_frame.flags & AG_FRAME_FLAG_VALID) != 0) {
-        ag_comm_rx_cback(&p_rx_frame);
+        ag_comm_rx_process(&p_rx_frame);
     }
 #endif
 }

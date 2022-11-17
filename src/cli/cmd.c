@@ -8,7 +8,6 @@
 
 #include "../agathis/base.h"
 #include "../agathis/comm.h"
-#include "../agathis/defs.h"
 #include "../agathis/config.h"
 #include "../hw/storage.h"
 
@@ -43,7 +42,9 @@ CLI_CMD_RETURN_t cmd_set(CLI_PARSED_CMD_t *cmdp) {
 }
 
 CLI_CMD_RETURN_t cmd_save(CLI_PARSED_CMD_t *cmdp) {
+#if MOD_HAS_STORAGE
     stor_save_state();
+#endif
     return CMD_DONE;
 }
 
@@ -57,12 +58,12 @@ CLI_CMD_RETURN_t cmd_mod_info(CLI_PARSED_CMD_t *cmdp) {
             continue;
         }
         if ((REMOTE_MODS[i].caps & AG_CAP_SW_TMC) != 0) {
-            printf("  [%02d] %06x:%06x * (%ds)\n", i, REMOTE_MODS[i].mac[1],
-                   REMOTE_MODS[i].mac[0],
+            printf("%2d - %06x:%06x M (%ds)\n", i,
+                   (unsigned int) REMOTE_MODS[i].mac[1], (unsigned int) REMOTE_MODS[i].mac[0],
                    REMOTE_MODS[i].last_seen);
         } else  {
-            printf("  [%02d] %06x:%06x (%ds)\n", i, REMOTE_MODS[i].mac[1],
-                   REMOTE_MODS[i].mac[0],
+            printf("%2d - %06x:%06x (%ds)\n", i,
+                   (unsigned int) REMOTE_MODS[i].mac[1], (unsigned int) REMOTE_MODS[i].mac[0],
                    REMOTE_MODS[i].last_seen);
         }
     }
@@ -233,7 +234,6 @@ CLI_CMD_RETURN_t cmd_pwr_v5_src(CLI_PARSED_CMD_t *cmdp) {
     } else {
         return CMD_WRONG_N;
     }
-
     return CMD_DONE;
 }
 
@@ -249,6 +249,5 @@ CLI_CMD_RETURN_t cmd_pwr_v5_load(CLI_PARSED_CMD_t *cmdp) {
     } else {
         return CMD_WRONG_N;
     }
-
     return CMD_DONE;
 }

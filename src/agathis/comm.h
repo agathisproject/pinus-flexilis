@@ -6,14 +6,7 @@
 
 #include <stdint.h>
 
-#if defined(__XC16__)
-#include <FreeRTOS.h>
-#include <task.h>
-#include <semphr.h>
-#include <queue.h>
-#endif
-
-#define AG_FRAME_LEN            32
+#define AG_FRAME_LEN            16
 #define AG_FRAME_FLAG_VALID     0x01
 
 typedef struct {
@@ -23,10 +16,6 @@ typedef struct {
     uint8_t nb;
     uint8_t *data;
 } AG_FRAME_L0;
-
-int ag_comm_is_frame_bcast(AG_FRAME_L0 *frame);
-
-int ag_comm_is_frame_for_me(AG_FRAME_L0 *frame);
 
 int ag_comm_is_frame_master(AG_FRAME_L0 *frame);
 

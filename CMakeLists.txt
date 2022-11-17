@@ -22,19 +22,16 @@ add_library(cli STATIC
 )
 
 add_library(hw STATIC
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/hw/gpio.c
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/hw/platform_sim/base.c
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/hw/misc.c
         ${CMAKE_CURRENT_SOURCE_DIR}/src/hw/storage.c
-        )
-
-add_library(platform STATIC
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/platform/platform.c
         )
 
 add_library(agathis STATIC
         ${CMAKE_CURRENT_SOURCE_DIR}/src/agathis/base.c
         ${CMAKE_CURRENT_SOURCE_DIR}/src/agathis/comm.c
 )
-target_link_libraries(agathis hw platform)
+target_link_libraries(agathis hw)
 
 add_executable(${PROJECT_NAME}
         ${CMAKE_CURRENT_SOURCE_DIR}/src/sim/state.c
@@ -45,6 +42,6 @@ add_executable(${PROJECT_NAME}
 )
 target_link_libraries(${PROJECT_NAME}
         pthread rt
-        ini cli hw platform
+        ini cli hw
         agathis
 )

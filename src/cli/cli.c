@@ -17,7 +17,7 @@ uint8_t CLI_IsRxReady(void) {
 uint8_t CLI_GetChar(void) {
     return (uint8_t) UART1_Read();
 }
-#elif defined(__linux__) || defined(__MINGW64__)
+#elif defined(ESP_PLATFORM)
 uint8_t p_CLI_IsRxReady(void) {
     return 1;
 }
@@ -25,7 +25,7 @@ uint8_t p_CLI_IsRxReady(void) {
 uint8_t p_CLI_GetChar(void) {
     return (uint8_t) getchar();
 }
-#elif defined (CONFIG_IDF_TARGET)
+#elif defined(__linux__) || defined(__MINGW64__)
 uint8_t p_CLI_IsRxReady(void) {
     return 1;
 }
@@ -298,6 +298,7 @@ void CLI_execute(void) {
     CLI_CMD_RETURN_t cmdRet = CMD_NOT_FOUND;
 
     //printf("DBG: execute %s (%d params) %d\n", p_PARSED_CMD.cmd, p_PARSED_CMD.nParams, p_CLI_ENV.folder);
+    printf("\n");
     if (strlen(p_PARSED_CMD.cmd) == 0) {
         if (p_CLI_ENV.folder->cmdDefault == NULL) {
             if (p_no_cmd == 4) {

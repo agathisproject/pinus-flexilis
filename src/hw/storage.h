@@ -6,12 +6,10 @@
 
 #include <stdint.h>
 
-void stor_get_MAC(uint8_t *mac);
-
-void stor_get_MAC_compact(uint32_t *mac);
-
 void stor_restore_state(void);
 
 void stor_save_state(void);
+
+void stor_erase_state(void);
 
 #endif /* STORAGE_WJQAWZ7F2E5SSJEN */

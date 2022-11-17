@@ -6,24 +6,20 @@
 
 #include <stdint.h>
 
-#if defined(__XC16__)
-#include <FreeRTOS.h>
-#include <task.h>
-#include <semphr.h>
-#include <queue.h>
-#endif
+#include "defs.h"
 
-#define PREFIX_MC "[ MC]"
-#define I2C_OFFSET 0x20
+#define I2C_OFFSET  0x20
 
 /**
  * @brief state of the local MC (Management Controller)
  */
 typedef struct {
+    uint8_t ver;            /**< structure version */
     uint8_t caps_hw_ext;    /**< HW capabilities that should be advertised */
     uint8_t caps_hw_int;    /**< HW capabilities that should NOT be advertised */
     uint8_t caps_sw;        /**< SW capabilities set by user */
     uint8_t last_err;
+    uint8_t tbd;
     uint16_t type;
     char mfr_name[16];
     char mfr_pn[16];
@@ -32,6 +28,7 @@ typedef struct {
     float i5_cutoff;
     float i3_nom;
     float i3_cutoff;
+    uint32_t crc;
 } AG_MC_STATE_t;
 
 extern AG_MC_STATE_t MOD_STATE;
@@ -51,19 +48,17 @@ typedef struct {
 
 extern AG_RMT_MC_STATE_t REMOTE_MODS[AG_MC_MAX_CNT];
 
+void ag_init(void);
+
+void ag_reset(void);
+
 void ag_add_remote_mod(const uint32_t *mac, uint8_t caps);
 
 void ag_upd_remote_mods(void);
 
 void ag_upd_alarm(void);
 
-#if defined(__XC16__)
-extern SemaphoreHandle_t xSemaphore_MMC;
-#endif
-
-void ag_reset(void);
-
-void ag_init(void);
+void ag_upd_hw(void);
 
 void ag_id_external(void);
 
