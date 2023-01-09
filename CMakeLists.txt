@@ -18,7 +18,6 @@ add_library(ini STATIC
 
 add_library(cli STATIC
         ${CMAKE_CURRENT_SOURCE_DIR}/src/cli/cli.c
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/cli/cmd.c
 )
 
 add_library(hw STATIC
@@ -37,6 +36,7 @@ add_executable(${PROJECT_NAME}
         ${CMAKE_CURRENT_SOURCE_DIR}/src/sim/state.c
         ${CMAKE_CURRENT_SOURCE_DIR}/src/sim/misc.c
         ${CMAKE_CURRENT_SOURCE_DIR}/src/sim/top.c
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/cmd.c
         ${CMAKE_CURRENT_SOURCE_DIR}/src/tasks.c
         ${CMAKE_CURRENT_SOURCE_DIR}/src/main.c
 )
