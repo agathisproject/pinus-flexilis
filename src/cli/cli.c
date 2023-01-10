@@ -230,13 +230,13 @@ CLIStatus_t p_ls(void) {
 }
 
 CLIStatus_t p_cd(void) {
-    if (p_cmd_parsed.nTk == 0) {
+    if (p_cmd_parsed.nTk == 1) {
         p_CLI_ENV.folder = p_cli_root;
         p_CLI_ENV.pathIdx = 0;
         return CLI_NO_ERROR;
     }
 
-    if (p_cmd_parsed.nTk > 2) {
+    if (p_cmd_parsed.nTk > 3) {
         return CLI_TOO_MANY_TOKENS;
     }
 

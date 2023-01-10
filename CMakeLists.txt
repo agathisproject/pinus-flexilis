@@ -13,7 +13,7 @@ add_compile_options("-Os" "-Wall" "-Wextra" "-Wpedantic"
 )
 
 add_library(ini STATIC
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/opt/ini/ini.c
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/opt/inih/ini.c
 )
 
 add_library(cli STATIC

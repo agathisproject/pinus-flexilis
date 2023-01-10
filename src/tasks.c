@@ -114,16 +114,12 @@ static void p_CLIInit(void) {
 
 #if defined(ESP_PLATFORM)
 void task_cli(void *pvParameter) {
-    uint8_t parseSts;
-
-    p_CLI_init_prompt();
+    p_CLIInit();
     while (1) {
-        printf("%s", CLI_getPrompt());
-        CLI_getCmd();
-        parseSts = CLI_parseCmd();
-        if (parseSts == 0) {
-            CLI_execute();
-        }
+        //printf("%s", CLI_getPrompt());
+        cli_Read();
+        cli_Parse();
+        cli_Execute();
         vTaskDelay(100 / portTICK_PERIOD_MS);
     }
     vTaskDelete(NULL);
