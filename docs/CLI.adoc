@@ -33,14 +33,7 @@ The commands are organized in the following levels:
   * (root) - commands for the local MC
     ** <<cmd_root_info>>
     ** <<cmd_root_set>>
-    ** <<cmd_root_save>>
-  * lcl - commands for local devices
-    ** pwr
-    ** clk
-    ** pps
-    ** jtag
-    ** usb
-    ** pcie
+    ** <<cmd_root_cfg>>
   * mod - commands for other MCs
     ** <<cmd_mod_info>>
     ** <<cmd_mod_id>>
@@ -53,10 +46,17 @@ The commands are organized in the following levels:
 [#cmd_root_info]
 === info
 
-Shows information about the module:
+```
+[...]$ info
+```
 
-  * capabilities
   * alarms
+  * temperature
+
+```
+[...]$ info mfg
+```
+
   * manufacturer name / PN / SN
 
 [#cmd_root_set]
@@ -64,18 +64,27 @@ Shows information about the module:
 
 Sets configuration options on the module.
 
-  * set master [on|off]
+```
+[...]$ set master [on|off]
+```
+
   ** *on* sets the current module as master
-  ** *anything else than on* sets the current module as
+  ** *anything else than on* sets the current module as slave
 
-[#cmd_root_save]
-=== save
+[#cmd_root_cfg]
+=== cfg
 
-Save configuration.
+```
+[...]$ cfg show
+```
+
+```
+[...]$ cfg save
+```
 
 == mod Commands
 
-[#cmd_mod_info]
+[#cmd_ModInfo]
 === info
 
 Shows information about the other modules in the system:
@@ -84,12 +93,12 @@ Shows information about the other modules in the system:
 * identifier (MAC)
 * number of seconds since last seen
 
-[#cmd_mod_id]
+[#cmd_ModID]
 === id
 
 Identifies the remote MC. Usually this is done by blinking a LED.
 
-[#cmd_mod_reset]
+[#cmd_ModReset]
 === reset
 
 Resets the remote MC.

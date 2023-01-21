@@ -22,11 +22,11 @@
 #include <signal.h>
 #include <unistd.h>
 
-#include "../sim/state.h"
+#include "../hw/platform_sim/state.h"
 #endif
 
 #include "base.h"
-#include "../hw/misc.h"
+#include "../hw/platform.h"
 
 static AG_FRAME_L0 p_tx_frame = {{0, 0}, {0, 0}, 0, AG_FRAME_DATA_LEN, NULL};
 static AG_FRAME_L0 p_rx_frame = {{0, 0}, {0, 0}, 0, AG_FRAME_DATA_LEN, NULL};
@@ -273,7 +273,7 @@ AG_FRAME_L0 *ag_comm_get_tx_frame(void) {
 #endif
     }
 
-    get_HW_ID_compact(my_mac);
+    hw_GetIDCompact(my_mac);
     p_tx_frame.src_mac[0] = my_mac[0];
     p_tx_frame.src_mac[1] = my_mac[1];
     memset(p_tx_frame.data, 0, p_tx_frame.nb * sizeof (uint8_t));

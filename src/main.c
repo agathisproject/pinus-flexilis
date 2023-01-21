@@ -8,7 +8,7 @@
 #include "tasks.h"
 #include "agathis/base.h"
 #include "cli/cli.h"
-#include "sim/top.h"
+#include "hw/platform_sim/top.h"
 
 static pthread_t pt_id1, pt_id2;
 

@@ -9,23 +9,46 @@
 #include "agathis/base.h"
 #include "agathis/comm.h"
 #include "agathis/config.h"
+#include "cli/cli.h"
 #include "hw/storage.h"
+#include "hw/platform.h"
 
-CLIStatus_t cmd_info(CLICmdParsed_t *cmdp) {
-    if (cmdp->nTk > 1) {
-        return CLI_CMD_PARAMS_ERROR;
-    }
+void cmd_SetPrompt(void) {
+    char prompt[CLI_PROMPT_MAX_LEN];
+    uint32_t mac[2];
 
-    printf("caps = %#04x/%#04x/%#04x\n", MOD_STATE.caps_hw_ext,
-           MOD_STATE.caps_hw_int, MOD_STATE.caps_sw);
-    printf("error = %d\n", MOD_STATE.last_err);
-    printf("MFR_NAME = %s\n", MOD_STATE.mfr_name);
-    printf("MFR_PN = %s\n", MOD_STATE.mfr_pn);
-    printf("MFR_SN = %s\n", MOD_STATE.mfr_sn);
-    return CLI_NO_ERROR;
+    hw_GetIDCompact(mac);
+#if defined(ESP_PLATFORM)
+    snprintf(prompt, CLI_PROMPT_MAX_LEN, "[%06lx:%06lx]%c ", mac[1], mac[0],
+             ((MOD_STATE.caps_sw && AG_CAP_SW_TMC) ? '#' : '$'));
+#elif defined(__linux__)
+    snprintf(prompt, CLI_PROMPT_MAX_LEN, "[%06x:%06x]%c ", mac[1], mac[0],
+             ((MOD_STATE.caps_sw && AG_CAP_SW_TMC) ? '#' : '$'));
+#endif
+    cli_SetPrompt(prompt);
 }
 
-CLIStatus_t cmd_set(CLICmdParsed_t *cmdp) {
+CLIStatus_t cmd_Info(CLICmdParsed_t *cmdp) {
+    if (cmdp->nTk == 1) {
+        printf("error = %d\n", MOD_STATE.last_err);
+        printf("temp = %.2f C\n", hw_GetTemperature());
+        return CLI_NO_ERROR;
+    }
+
+    if (cmdp->nTk == 2) {
+        if (strncmp(cmdp->tokens[1], "mfg", 3) == 0) {
+            printf("MFR_NAME = %s\n", MOD_STATE.mfr_name);
+            printf("MFR_PN = %s\n", MOD_STATE.mfr_pn);
+            printf("MFR_SN = %s\n", MOD_STATE.mfr_sn);
+        } else {
+            return CLI_CMD_PARAMS_ERROR;
+        }
+        return CLI_NO_ERROR;
+    }
+    return CLI_CMD_PARAMS_ERROR;
+}
+
+CLIStatus_t cmd_Set(CLICmdParsed_t *cmdp) {
     if (cmdp->nTk != 3) {
         return CLI_CMD_PARAMS_ERROR;
     }
@@ -36,19 +59,33 @@ CLIStatus_t cmd_set(CLICmdParsed_t *cmdp) {
         } else {
             MOD_STATE.caps_sw &= (uint8_t) (~AG_CAP_SW_TMC);
         }
+        cmd_SetPrompt();
+        return CLI_NO_ERROR;
+    }
+    return CLI_CMD_PARAMS_ERROR;
+}
+
+CLIStatus_t cmd_Cfg(CLICmdParsed_t *cmdp) {
+    if (cmdp->nTk != 2) {
+        return CLI_CMD_PARAMS_ERROR;
     }
 
-    return CLI_NO_ERROR;
-}
-
-CLIStatus_t cmd_save(CLICmdParsed_t *cmdp) {
+    if (strncmp(cmdp->tokens[1], "show", 4) == 0) {
+        printf("caps = %#04x/%#04x/%#04x\n", MOD_STATE.caps_hw_ext,
+               MOD_STATE.caps_hw_int, MOD_STATE.caps_sw);
+        return CLI_NO_ERROR;
+    } else if (strncmp(cmdp->tokens[1], "save", 4) == 0) {
 #if MOD_HAS_STORAGE
-    stor_save_state();
+        stor_SaveState();
+        return CLI_NO_ERROR;
 #endif
-    return CLI_NO_ERROR;
+    } else {
+        return CLI_CMD_PARAMS_ERROR;
+    }
+    return CLI_CMD_PARAMS_ERROR;
 }
 
-CLIStatus_t cmd_mod_info(CLICmdParsed_t *cmdp) {
+CLIStatus_t cmd_ModInfo(CLICmdParsed_t *cmdp) {
     if (cmdp->nTk > 1) {
         return CLI_CMD_PARAMS_ERROR;
     }
@@ -70,7 +107,7 @@ CLIStatus_t cmd_mod_info(CLICmdParsed_t *cmdp) {
     return CLI_NO_ERROR;
 }
 
-CLIStatus_t cmd_mod_id(CLICmdParsed_t *cmdp) {
+CLIStatus_t cmd_ModID(CLICmdParsed_t *cmdp) {
     if (cmdp->nTk != 2) {
         return CLI_CMD_PARAMS_ERROR;
     }
@@ -101,7 +138,7 @@ CLIStatus_t cmd_mod_id(CLICmdParsed_t *cmdp) {
     return CLI_NO_ERROR;
 }
 
-CLIStatus_t cmd_mod_reset(CLICmdParsed_t *cmdp) {
+CLIStatus_t cmd_ModReset(CLICmdParsed_t *cmdp) {
     if (cmdp->nTk != 2) {
         return CLI_CMD_PARAMS_ERROR;
     }
@@ -132,7 +169,7 @@ CLIStatus_t cmd_mod_reset(CLICmdParsed_t *cmdp) {
     return CLI_NO_ERROR;
 }
 
-CLIStatus_t cmd_mod_power_on(CLICmdParsed_t *cmdp) {
+CLIStatus_t cmd_ModPowerOn(CLICmdParsed_t *cmdp) {
     if (cmdp->nTk != 2) {
         return CLI_CMD_PARAMS_ERROR;
     }
@@ -163,7 +200,7 @@ CLIStatus_t cmd_mod_power_on(CLICmdParsed_t *cmdp) {
     return CLI_NO_ERROR;
 }
 
-CLIStatus_t cmd_mod_power_off(CLICmdParsed_t *cmdp) {
+CLIStatus_t cmd_ModPowerOff(CLICmdParsed_t *cmdp) {
     if (cmdp->nTk != 2) {
         return CLI_CMD_PARAMS_ERROR;
     }
@@ -191,63 +228,5 @@ CLIStatus_t cmd_mod_power_off(CLICmdParsed_t *cmdp) {
     frame->data[2] = AG_CMD_POWER_OFF;
     frame->flags |= AG_FRAME_FLAG_VALID;
     ag_comm_tx(frame);
-    return CLI_NO_ERROR;
-}
-
-CLIStatus_t cmd_pwr_stats(CLICmdParsed_t *cmdp) {
-    if (cmdp->nTk > 1) {
-        return CLI_CMD_PARAMS_ERROR;
-    }
-
-    printf("V5_SRC = OFF\n");
-    printf("V5_LOAD = OFF\n");
-    printf("I5 = %.3f A\n", ag_get_I5_NOM());
-    printf("I3 = %.3f A\n", ag_get_I3_NOM());
-    return CLI_NO_ERROR;
-}
-
-CLIStatus_t cmd_pwr_ctrl(CLICmdParsed_t *cmdp) {
-    if (cmdp->nTk > 1) {
-        return CLI_CMD_PARAMS_ERROR;
-    }
-
-    printf("SRC_I5_NOM = %.3f A\n", MOD_STATE.i5_nom);
-    printf("SRC_I5_CUTOFF = %.3f A\n", MOD_STATE.i5_cutoff);
-    printf("SRC_I3_NOM = %.3f A\n", MOD_STATE.i3_nom);
-    printf("SRC_I3_CUTOFF = %.3f A\n", MOD_STATE.i3_cutoff);
-
-    printf("LOAD_I5_NOM = %.3f A\n", MOD_STATE.i5_nom);
-    printf("LOAD_I5_CUTOFF = %.3f A\n", MOD_STATE.i5_cutoff);
-    printf("LOAD_I3_NOM = %.3f A\n", MOD_STATE.i3_nom);
-    return CLI_NO_ERROR;
-}
-
-CLIStatus_t cmd_pwr_v5_src(CLICmdParsed_t *cmdp) {
-    if (cmdp->nTk != 2) {
-        return CLI_CMD_PARAMS_ERROR;
-    }
-
-    if (strncmp(cmdp->tokens[1], "on", 2) == 0) {
-        printf("on\n");
-    } else if (strncmp(cmdp->tokens[1], "off", 3) == 0) {
-        printf("off\n");
-    } else {
-        return CLI_CMD_PARAMS_ERROR;
-    }
-    return CLI_NO_ERROR;
-}
-
-CLIStatus_t cmd_pwr_v5_load(CLICmdParsed_t *cmdp) {
-    if (cmdp->nTk != 2) {
-        return CLI_CMD_PARAMS_ERROR;
-    }
-
-    if (strncmp(cmdp->tokens[1], "on", 2) == 0) {
-        printf("on\n");
-    } else if (strncmp(cmdp->tokens[1], "off", 3) == 0) {
-        printf("off\n");
-    } else {
-        return CLI_CMD_PARAMS_ERROR;
-    }
     return CLI_NO_ERROR;
 }

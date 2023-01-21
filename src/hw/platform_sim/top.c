@@ -9,7 +9,7 @@
 #include <time.h>
 #include <unistd.h>
 
-#include "../opt/inih/ini.h"
+#include "../../opt/inih/ini.h"
 #include "state.h"
 #include "top.h"
 

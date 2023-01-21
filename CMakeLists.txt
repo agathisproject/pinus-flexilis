@@ -21,8 +21,9 @@ add_library(cli STATIC
 )
 
 add_library(hw STATIC
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/hw/platform_sim/base.c
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/hw/misc.c
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/hw/platform_sim/platform.c
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/hw/platform_sim/state.c
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/hw/platform_sim/top.c
         ${CMAKE_CURRENT_SOURCE_DIR}/src/hw/storage.c
         )
 
@@ -33,9 +34,6 @@ add_library(agathis STATIC
 target_link_libraries(agathis hw)
 
 add_executable(${PROJECT_NAME}
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/sim/state.c
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/sim/misc.c
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/sim/top.c
         ${CMAKE_CURRENT_SOURCE_DIR}/src/cmd.c
         ${CMAKE_CURRENT_SOURCE_DIR}/src/tasks.c
         ${CMAKE_CURRENT_SOURCE_DIR}/src/main.c
