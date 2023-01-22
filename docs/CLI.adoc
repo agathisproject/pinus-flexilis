@@ -32,14 +32,16 @@ The commands are organized in the following levels:
 
   * (root) - commands for the local MC
     ** <<cmd_root_info>>
+    ** <<cmd_root_stats>>
     ** <<cmd_root_set>>
     ** <<cmd_root_cfg>>
   * mod - commands for other MCs
     ** <<cmd_mod_info>>
-    ** <<cmd_mod_id>>
+    ** <<cmd_mod_led>>
     ** <<cmd_mod_reset>>
     ** <<cmd_mod_on>>
     ** <<cmd_mod_off>>
+    ** <<cmd_mod_speed>>
 
 == root Commands
 
@@ -59,6 +61,15 @@ The commands are organized in the following levels:
 
   * manufacturer name / PN / SN
 
+[#cmd_root_stats]
+=== stats
+
+```
+[...]$ info
+```
+
+Show statistics (packets, etc.)
+
 [#cmd_root_set]
 === set
 
@@ -74,17 +85,15 @@ Sets configuration options on the module.
 [#cmd_root_cfg]
 === cfg
 
-```
-[...]$ cfg show
-```
+Shows, saves or erases the app configuration.
 
 ```
-[...]$ cfg save
+[...]$ cfg [show|save|erase]
 ```
 
 == mod Commands
 
-[#cmd_ModInfo]
+[#cmd_mod_info]
 === info
 
 Shows information about the other modules in the system:
@@ -93,12 +102,12 @@ Shows information about the other modules in the system:
 * identifier (MAC)
 * number of seconds since last seen
 
-[#cmd_ModID]
-=== id
+[#cmd_mod_led]
+=== led
 
-Identifies the remote MC. Usually this is done by blinking a LED.
+Blink LED (if any) on the remote MC.
 
-[#cmd_ModReset]
+[#cmd_mod_reset]
 === reset
 
 Resets the remote MC.
@@ -112,3 +121,8 @@ Powers on the remote MC.
 === off
 
 Powers off the remote MC.
+
+[#cmd_mod_speed]
+=== speed
+
+Send as many packets as possible in 1s and shows the result.
