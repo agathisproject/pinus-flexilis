@@ -32,7 +32,6 @@ The commands are organized in the following levels:
 
   * (root) - commands for the local MC
     ** <<cmd_root_info>>
-    ** <<cmd_root_stats>>
     ** <<cmd_root_set>>
     ** <<cmd_root_cfg>>
   * mod - commands for other MCs
@@ -49,35 +48,29 @@ The commands are organized in the following levels:
 === info
 
 ```
-[...]$ info
+[...]$ info [hw|sw]
 ```
+
+Shows:
 
   * alarms
+  * packets stats
   * temperature
 
-```
-[...]$ info mfg
-```
+//-
+  * HW info
 
-  * manufacturer name / PN / SN
-
-[#cmd_root_stats]
-=== stats
-
-```
-[...]$ info
-```
-
-Show statistics (packets, etc.)
+//-
+* SW info
 
 [#cmd_root_set]
 === set
 
-Sets configuration options on the module.
-
 ```
 [...]$ set master [on|off]
 ```
+
+Sets configuration options on the module.
 
   ** *on* sets the current module as master
   ** *anything else than on* sets the current module as slave
@@ -85,11 +78,11 @@ Sets configuration options on the module.
 [#cmd_root_cfg]
 === cfg
 
-Shows, saves or erases the app configuration.
-
 ```
 [...]$ cfg [show|save|erase]
 ```
+
+Shows, saves or erases the app configuration.
 
 == mod Commands
 

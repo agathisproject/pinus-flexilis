@@ -19,7 +19,7 @@ void sigint_handler(int dummy) {
 
 int main(int argc, char *argv[]) {
     sim_init(argc, argv);
-    ag_init();
+    ag_Init();
 
     signal(SIGINT, sigint_handler);
 

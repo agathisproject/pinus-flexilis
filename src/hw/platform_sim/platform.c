@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
+#include <stdio.h>
 #include <stdlib.h>
 
 #include "../platform.h"
@@ -7,6 +8,14 @@
 
 void platform_init(void) {
 
+}
+
+void platform_Show(void) {
+    printf("platform: simulator\n");
+}
+
+void hw_Reset(void) {
+    printf("RESET !!!\n");
 }
 
 void hw_GetID(uint8_t *mac) {
