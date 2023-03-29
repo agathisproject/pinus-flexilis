@@ -6,8 +6,8 @@
 
 #include <stdint.h>
 
-void sim_init(int argc, char *argv[]);
+void sim_Init(int argc, char *argv[]);
 
-void sim_finish(void);
+void sim_Exit(void);
 
 #endif /* MISC_Y9ED2948R6SHPC6G */

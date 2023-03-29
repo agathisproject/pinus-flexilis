@@ -16,6 +16,10 @@ add_library(ini STATIC
         ${CMAKE_CURRENT_SOURCE_DIR}/src/opt/inih/ini.c
 )
 
+add_library(utils STATIC
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/opt/utils.c
+)
+
 add_library(cli STATIC
         ${CMAKE_CURRENT_SOURCE_DIR}/src/cli/cli.c
 )
@@ -26,6 +30,7 @@ add_library(hw STATIC
         ${CMAKE_CURRENT_SOURCE_DIR}/src/hw/platform_sim/top.c
         ${CMAKE_CURRENT_SOURCE_DIR}/src/hw/storage.c
         )
+target_link_libraries(hw utils)
 
 add_library(agathis STATIC
         ${CMAKE_CURRENT_SOURCE_DIR}/src/agathis/base.c
@@ -40,6 +45,6 @@ add_executable(${PROJECT_NAME}
 )
 target_link_libraries(${PROJECT_NAME}
         pthread rt
-        ini cli hw
+        ini utils cli hw
         agathis
 )

@@ -1,17 +1,18 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
+#include "top.h"
+
 #include <dirent.h>
 #include <mqueue.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <sys/stat.h>
 #include <time.h>
 #include <unistd.h>
+#include <sys/stat.h>
 
 #include "../../opt/inih/ini.h"
 #include "state.h"
-#include "top.h"
 
 static void p_show_help(const char *appName) {
     printf("Usage: pinus-flexilis [OPTIONS]\n");
@@ -125,7 +126,8 @@ void p_start_IPC(void) {
     char mq_name[32] = "";
 
     snprintf(mq_name, 32, "/%s%03d", SIM_MQ_PREFIX, SIM_STATE.id);
-    SIM_STATE.msg_queue = mq_open(mq_name, (O_RDONLY | O_CREAT), 0660, NULL);
+    SIM_STATE.msg_queue = mq_open(mq_name, (O_RDONLY | O_CREAT | O_NONBLOCK), 0660,
+                                  NULL);
     if (SIM_STATE.msg_queue == -1) {
         perror("CANNOT create mq");
         exit(EXIT_FAILURE);
@@ -133,7 +135,7 @@ void p_start_IPC(void) {
     printf("start IPC\n");
 }
 
-void sim_init(int argc, char *argv[]) {
+void sim_Init(int argc, char *argv[]) {
     int opt = 0;
 
     while ((opt = getopt (argc, argv, "he:c:b")) != -1) {
@@ -221,7 +223,7 @@ void p_stop_IPC(void ) {
     printf("stop IPC\n");
 }
 
-void sim_finish(void) {
+void sim_Exit(void) {
     printf("\n");
     p_stop_IPC();
 }

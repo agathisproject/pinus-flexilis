@@ -1,17 +1,49 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
+#include "../platform.h"
+
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/stat.h>
 
-#include "../platform.h"
 #include "state.h"
 
-void platform_init(void) {
+static char p_log_path[SIM_PATH_LEN];
 
+void platform_Init(void) {
+    struct stat st;
+    if ((stat("log", &st) != 0) || !(S_ISDIR(st.st_mode))) {
+        if (mkdir("log", S_IRWXU | S_IRWXG) != 0) {
+            printf("CANNOT CREATE log folder\n");
+            exit(EXIT_FAILURE);
+        };
+    }
+
+    FILE *fp;
+
+    sprintf(p_log_path, "./log/last_run_%03d.log", SIM_STATE.id);
+    fp = fopen(p_log_path, "w");
+    if (!fp) {
+        perror("CANNOT create file");
+        exit(EXIT_FAILURE);
+    }
+    fclose(fp);
+    printf("log file: '%s'\n", p_log_path);
 }
 
 void platform_Show(void) {
     printf("platform: simulator\n");
+}
+
+const char * platform_GetParamStr(PlatformParamId_t param_id) {
+    switch (param_id) {
+        case PLTF_LOG_PATH: {
+            return p_log_path;
+        }
+        default: {
+            return NULL;
+        }
+    }
 }
 
 void hw_Reset(void) {
