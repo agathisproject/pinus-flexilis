@@ -35,11 +35,13 @@ CLIStatus_t cmd_Info(CLICmdParsed_t *cmdp) {
     if (cmdp->nTk == 1) {
         printf("error: %d\n", g_MCState.lastErr);
 #if defined(ESP_PLATFORM)
-        printf("TX/RX pkts.: %lu/%lu\n", g_MCStats.cntTX, g_MCStats.cntRX);
-        printf("drop/fail pkts.: %lu/%lu\n", g_MCStats.cntRXDrop, g_MCStats.cntRXFail);
+        printf("TX pkts: %lu/%lu\n", g_MCStats.cntTX, g_MCStats.cntTXDrop);
+        printf("RX pkts: %lu/%lu/%lu\n", g_MCStats.cntRX, g_MCStats.cntRXDrop,
+               g_MCStats.cntRXFail);
 #elif defined(__linux__)
-        printf("TX/RX pkts.: %u/%u\n", g_MCStats.cntTX, g_MCStats.cntRX);
-        printf("drop/fail pkts.: %u/%u\n", g_MCStats.cntRXDrop, g_MCStats.cntRXFail);
+        printf("TX pkts: %u/%u\n", g_MCStats.cntTX, g_MCStats.cntTXDrop);
+        printf("RX pkts: %u/%u/%u\n", g_MCStats.cntRX, g_MCStats.cntRXDrop,
+               g_MCStats.cntRXFail);
 #endif
         printf("temp: %.2f C\n", hw_GetTemperature());
         return CLI_NO_ERROR;
@@ -302,13 +304,11 @@ CLIStatus_t cmd_ModSpeed(CLICmdParsed_t *cmdp) {
             }
         }
         printf("(%d) TX packets: %d, RX packets: %d\n", (i + 1), n_ping, n_reply);
-        if (n_reply == 0) {
-            exit(EXIT_FAILURE);
-        }
 
+        usleep(5000);
         if (n_ping > n_reply) {
             // get rid of any lost replies from previous run
-            usleep(10000);
+            usleep(5000);
             if (agComm_GetRXState() != AG_RX_NONE) {
                 if (agComm_GetRXFrameType() == AG_FRM_TYPE_ACK) {
                     if (agComm_GetRXFrameCmd() == AG_FRM_CMD_PING) {

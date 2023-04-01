@@ -36,9 +36,10 @@ extern AGLclState_t g_MCState;
 
 typedef struct {
     uint32_t cntTX;
+    uint32_t cntTXDrop;
     uint32_t cntRX;
     uint32_t cntRXDrop;
-    uint32_t cntRXFail;
+    uint32_t cntRXFail;  ///< RX packets not processed
 } AGLclStats_t;
 
 extern AGLclStats_t g_MCStats;

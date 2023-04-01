@@ -22,7 +22,9 @@ AGLclConfig_t g_MCConfig = {.ver = 1, .capsHW = 0, .capsSW = 0,
 
 AGLclState_t g_MCState = {.lastErr = AG_ERR_NONE, .flags = 0x0000};
 
-AGLclStats_t g_MCStats = {.cntTX = 0, .cntRX = 0, .cntRXDrop = 0, .cntRXFail = 0};
+AGLclStats_t g_MCStats = {.cntTX = 0, .cntTXDrop = 0,
+                          .cntRX = 0, .cntRXDrop = 0, .cntRXFail = 0
+                         };
 
 AGRmtState_t g_RemoteMCs[AG_MC_MAX_CNT] = {
     {.mac = {0, 0}, .capsSW = 0, .lastErr = 0, .lastSeen = -1},

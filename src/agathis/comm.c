@@ -2,6 +2,7 @@
 
 #include "comm.h"
 
+#include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -18,7 +19,6 @@
 #include <dirent.h>
 #include <fcntl.h>
 #include <mqueue.h>
-#include <pthread.h>
 #include <signal.h>
 #include <unistd.h>
 #include <sys/time.h>
@@ -100,7 +100,7 @@ int agComm_IsRXFrameFromMaster(void) {
 
 int agComm_IsRXFrameFromBcast(void) {
     if ((p_rx_frame.dst_mac[1] == 0x00FFFFFF)
-            && (p_rx_frame.dst_mac[1] == 0x00FFFFFF)) {
+            && (p_rx_frame.dst_mac[0] == 0x00FFFFFF)) {
         return 1;
     }
     return 0;
@@ -111,31 +111,36 @@ static void p_espnow_tx_cbk(const uint8_t *mac_addr,
                             esp_now_send_status_t status) {
     //char *appName = pcTaskGetName(NULL);
     //ESP_LOGI(appName, "TX to "MACSTR" status %d", MAC2STR(mac_addr), status);
+    if (status != ESP_NOW_SEND_SUCCESS) {
+        g_MCStats.cntTXDrop ++;
+    }
 }
 
 static void p_espnow_rx_cbk(const uint8_t *mac_addr, const uint8_t *data,
                             int len) {
-    //char *appName = pcTaskGetName(NULL);
-    //ESP_LOGI(appName, "RX from "MACSTR" %d B", MAC2STR(mac_addr), len);
-    if (len > p_rx_frame.nb) {
+    if (len > AG_FRM_DATA_LEN) {
         printf("%s - frame TOO BIG\n", __func__);
         return;
     }
 
-    if (p_rx_frame.flags != 0) {
-        printf("E (%s) dropping RX frame\n", __func__);
-        return;
-    }
+    //ESP_LOGI("COMM", "RX %d - " MACSTR " -> me", data[AG_FRM_TYPE_OFFSET], MAC2STR(mac_addr));
 
-    memset(p_rx_frame.data, 0, p_rx_frame.nb * sizeof (uint8_t));
+    pthread_mutex_lock(&p_rx_lock);
+
+    memset(p_rx_frame.data, 0, AG_FRM_DATA_LEN * sizeof (uint8_t));
     memcpy(p_rx_frame.data, data, len * sizeof (uint8_t));
     p_rx_frame.src_mac[1] = (mac_addr[0] << 16) | (mac_addr[1] << 8) | mac_addr[2];
     p_rx_frame.src_mac[0] = (mac_addr[3] << 16) | (mac_addr[4] << 8) | mac_addr[5];
+    p_rx_state = AG_RX_FULL;
+
+    pthread_mutex_unlock(&p_rx_lock);
+
+    g_MCStats.cntRX ++;
 }
 #elif defined(__linux__)
 static void p_mq_notify(void);
 
-uint8_t p_recv_data[AG_FRM_DATA_LEN + 12];
+static uint8_t p_recv_data[AG_FRM_DATA_LEN + 12];
 
 static void p_linux_rx_cbk(void) {
     pthread_mutex_lock(&p_rx_lock);
@@ -144,10 +149,10 @@ static void p_linux_rx_cbk(void) {
         g_MCStats.cntRXFail ++;
     }
     agComm_InitRXFrame(&p_rx_frame);
-    p_rx_frame.dst_mac[1] = ((uint32_t) p_recv_data[5] << 16) | ((
-                                uint32_t) p_recv_data[4] << 8) | p_recv_data[3];
-    p_rx_frame.dst_mac[0] = ((uint32_t) p_recv_data[2] << 16) | ((
-                                uint32_t) p_recv_data[1] << 8) | p_recv_data[0];
+//    p_rx_frame.dst_mac[1] = ((uint32_t) p_recv_data[5] << 16) | ((
+//                                uint32_t) p_recv_data[4] << 8) | p_recv_data[3];
+//    p_rx_frame.dst_mac[0] = ((uint32_t) p_recv_data[2] << 16) | ((
+//                                uint32_t) p_recv_data[1] << 8) | p_recv_data[0];
     p_rx_frame.src_mac[1] = ((uint32_t) p_recv_data[11] << 16) | ((
                                 uint32_t) p_recv_data[10] << 8) | p_recv_data[9];
     p_rx_frame.src_mac[0] = ((uint32_t) p_recv_data[8] << 16) | ((
@@ -159,9 +164,9 @@ static void p_linux_rx_cbk(void) {
     pthread_mutex_unlock(&p_rx_lock);
 
     log_file("COMM", "RX %d - %06x:%06x -> %06x:%06x",
-             p_rx_frame.data[AG_FRM_TYPE_OFFSET],
-             p_rx_frame.src_mac[1], p_rx_frame.src_mac[0], p_rx_frame.dst_mac[1],
-             p_rx_frame.dst_mac[0]);
+             p_rx_frame.data[AG_FRM_TYPE_OFFSET], p_rx_frame.src_mac[1],
+             p_rx_frame.src_mac[0],
+             p_rx_frame.dst_mac[1], p_rx_frame.dst_mac[0]);
     g_MCStats.cntRX ++;
 }
 
@@ -227,32 +232,38 @@ static void p_mq_notify(void) {
         exit(EXIT_FAILURE);
     }
 }
-
 #endif
 
-char p_send_data[AG_FRM_DATA_LEN + 12] = {0};
+#if defined(__linux__)
+static char p_send_data[AG_FRM_DATA_LEN + 12] = {0};
+#endif
 
 void agComm_SendFrame(AG_FRAME_L0 *frame) {
     if ((g_MCState.flags & AG_FLAG_SW_TXOFF) != 0) {
         return;
     }
+
+//    ESP_LOGI("COMM", "TX %d - %06lx:%06lx -> %06lx:%06lx",
+//             frame->data[AG_FRM_TYPE_OFFSET],
+//             frame->src_mac[1], frame->src_mac[0], frame->dst_mac[1], frame->dst_mac[0]);
     log_file("COMM", "TX %d - %06x:%06x -> %06x:%06x",
              frame->data[AG_FRM_TYPE_OFFSET],
              frame->src_mac[1], frame->src_mac[0], frame->dst_mac[1], frame->dst_mac[0]);
+
+    pthread_mutex_lock(&p_tx_lock);
+
 #if defined(ESP_PLATFORM)
-    if (frame.nb > ESP_NOW_MAX_DATA_LEN) {
+    if (AG_FRM_DATA_LEN > ESP_NOW_MAX_DATA_LEN) {
         //printf("%s - frame TOO BIG\n", __func__);
         return;
     }
 
-    uint8_t dst_mac[6] = {(uint8_t) (frame.dst_mac[1] >> 16), (uint8_t) (frame.dst_mac[1] >> 8),
-                          (uint8_t) (frame.dst_mac[1]), (uint8_t) (frame.dst_mac[0] >> 16),
-                          (uint8_t) (frame.dst_mac[0] >> 8), (uint8_t) (frame.dst_mac[0])
+    uint8_t dst_mac[6] = {(uint8_t) (frame->dst_mac[1] >> 16), (uint8_t) (frame->dst_mac[1] >> 8),
+                          (uint8_t) (frame->dst_mac[1]), (uint8_t) (frame->dst_mac[0] >> 16),
+                          (uint8_t) (frame->dst_mac[0] >> 8), (uint8_t) (frame->dst_mac[0])
                          };
-    espnow_tx(dst_mac, frame.data, frame.nb);
+    espnow_tx(dst_mac, frame->data, AG_FRM_DATA_LEN);
 #elif defined(__linux__)
-    pthread_mutex_lock(&p_tx_lock);
-
     p_send_data[0] = (char) (frame->dst_mac[0] & 0xFF);
     p_send_data[1] = (char) (frame->dst_mac[0] >> 8);
     p_send_data[2] = (char) (frame->dst_mac[0] >> 16);
@@ -308,10 +319,13 @@ void agComm_SendFrame(AG_FRAME_L0 *frame) {
     }
     closedir(d);
     usleep(5000);  // add some delay to simulate propagation
+#endif
 
     pthread_mutex_unlock(&p_tx_lock);
-#endif
+
     g_MCStats.cntTX ++;
+
+//    ESP_LOGI("COMM", "TX done");
     log_file("COMM", "TX done");
 }
 
@@ -326,23 +340,19 @@ void agComm_SetFrameCmd(AGFrmCmd_t cmd, AG_FRAME_L0 *frame) {
 
 void agComm_Init(void) {
     //printf("DBG %s\n", __func__ );
+    pthread_mutex_init(&p_tx_lock, NULL);
+    pthread_mutex_init(&p_rx_lock, NULL);
 #if defined(ESP_PLATFORM)
     espnow_init();
     espnow_set_tx_callback(p_espnow_tx_cbk);
     espnow_set_rx_callback(p_espnow_rx_cbk);
 #elif defined(__linux)
-    pthread_mutex_init(&p_tx_lock, NULL);
-    pthread_mutex_init(&p_rx_lock, NULL);
     p_mq_notify();
 #endif
 }
 
 void agComm_Exit(void) {
-#if defined(ESP_PLATFORM)
-
-#elif defined(__linux)
     pthread_mutex_destroy(&p_tx_lock);
     pthread_mutex_destroy(&p_rx_lock);
-#endif
     //printf("DBG %s\n", __func__ );
 }

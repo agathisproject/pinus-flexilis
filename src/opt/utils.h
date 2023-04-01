@@ -5,9 +5,7 @@
 /** @file */
 
 #include <stdint.h>
-#if defined(__linux__)
 #include <sys/time.h>
-#endif
 
 void log_file(const char *tag, const char *format, ...);
 

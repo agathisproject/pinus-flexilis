@@ -87,7 +87,7 @@ void *task_cli (void *vargp) {
 static AG_FRAME_L0 p_tx_frame = {{0, 0}, {0, 0}, {0}};
 static AG_FRAME_L0 p_rx_frame = {{0, 0}, {0, 0}, {0}};
 
-#define STATUS_DELAY 2000
+#define STATUS_DELAY 5000
 
 static void p_send_status_frame(void) {
     agComm_InitTXFrame(&p_tx_frame);
@@ -99,36 +99,11 @@ static void p_send_status_frame(void) {
 
 #if defined(ESP_PLATFORM)
 void task_rf(void *pvParameter) {
-    //char *appName = pcTaskGetName(NULL);
-    agComm_Init();
-    vTaskDelay(100 / portTICK_PERIOD_MS);
-
-    agComm_SendStatus();
-    time_t t_status = time(NULL);
-    time_t t_update = time(NULL);
-
-    while (1) {
-        time_t t_now = time(NULL);
-        if ((t_now - t_status) > 4) {
-            agComm_SendStatus();
-            t_status = time(NULL);
-        }
-        agComm_SendFrame();
-        agComm_RecvFrame();
-
-        ag_UpdAlarm();
-        ag_UpdHWState();
-        if ((t_now - t_update) > 0) {
-            ag_UpdRemoteMCs();
-            t_update = t_now;
-        }
-        vTaskDelay(10 / portTICK_PERIOD_MS);
-    }
-    vTaskDelete(NULL);
-}
 #elif defined(__linux__)
 void *task_rf (void *vargp) {
+#endif
     agComm_Init();
+    usleep(100000);
 
     struct timeval t_now, t_status, t_update;
 
@@ -199,6 +174,9 @@ void *task_rf (void *vargp) {
             ag_UpdRemoteMCs();
             gettimeofday(&t_update, NULL);
         }
+        usleep(10000);
     }
-}
+#if defined(ESP_PLATFORM)
+    vTaskDelete(NULL);
 #endif
+}
