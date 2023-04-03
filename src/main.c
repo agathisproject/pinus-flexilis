@@ -7,10 +7,8 @@
 
 #include "tasks.h"
 #include "agathis/base.h"
-#include "cli/cli.h"
 #include "hw/platform.h"
 #include "hw/platform_sim/top.h"
-#include "opt/utils.h"
 
 static pthread_t pt_id1, pt_id2;
 
@@ -19,9 +17,14 @@ void sigint_handler(int dummy) {
     //pthread_cancel(pt_id2);
 }
 
+static void p_banner(void) {
+    printf("%s %s\n", APP_NAME, "start");
+}
+
 int main(int argc, char *argv[]) {
     sim_Init(argc, argv);
-    platform_Init();
+    pltf_Init();
+    p_banner();
     ag_Init();
 
     signal(SIGINT, sigint_handler);

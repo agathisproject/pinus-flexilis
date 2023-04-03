@@ -10,7 +10,7 @@
 
 static char p_log_path[SIM_PATH_LEN];
 
-void platform_Init(void) {
+void pltf_Init(void) {
     struct stat st;
     if ((stat("log", &st) != 0) || !(S_ISDIR(st.st_mode))) {
         if (mkdir("log", S_IRWXU | S_IRWXG) != 0) {
@@ -31,11 +31,16 @@ void platform_Init(void) {
     printf("log file: '%s'\n", p_log_path);
 }
 
-void platform_Show(void) {
+void pltf_ShowHW(void) {
     printf("platform: simulator\n");
 }
 
-const char * platform_GetParamStr(PlatformParamId_t param_id) {
+void pltf_ShowSW(void) {
+    printf("APP_NAME: %s\n", APP_NAME);
+    printf("APP_VER: %d\n", 0);
+}
+
+const char * pltf_GetParamStr(PltfParamId_t param_id) {
     switch (param_id) {
         case PLTF_LOG_PATH: {
             return p_log_path;
@@ -46,21 +51,29 @@ const char * platform_GetParamStr(PlatformParamId_t param_id) {
     }
 }
 
-void hw_Reset(void) {
-    printf("RESET !!!\n");
-}
-
-void hw_GetID(uint8_t *mac) {
+void pltf_GetID(uint8_t *mac) {
     for (int i = 0; i < 6; i++) {
         mac[i] = SIM_STATE.mac[i];
     }
 }
 
-void hw_GetIDCompact(uint32_t *mac) {
+void pltf_GetIDCompact(uint32_t *mac) {
     // *INDENT-OFF*
     mac[1] = ((uint32_t) SIM_STATE.mac[5] << 16) | ((uint32_t) SIM_STATE.mac[4] << 8) | SIM_STATE.mac[3];
     mac[0] = ((uint32_t) SIM_STATE.mac[2] << 16) | ((uint32_t) SIM_STATE.mac[1] << 8) | SIM_STATE.mac[0];
     // *INDENT-ON*
+}
+
+void pltf_Reset(void) {
+    printf("RESET !!!\n");
+}
+
+void pltf_PwrOn(void) {
+    printf("board POWER ON\n");
+}
+
+void pltf_PwrOff(void) {
+    printf("board POWER OFF\n");
 }
 
 void gpio_SetRGB(uint32_t code) {
